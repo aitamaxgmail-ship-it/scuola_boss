@@ -1,1 +1,996 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tabelline Boss - Kingdom Map & Skill Games</title>
+  
+  <!-- Firebase SDK Setup (v10+) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0-mF_HRAtNlGloPpuDP2yNkQkxItEyKQ",
+      authDomain: "scuolaboss.firebaseapp.com",
+      databaseURL: "https://scuolaboss-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "scuolaboss",
+      storageBucket: "scuolaboss.firebasestorage.app",
+      messagingSenderId: "578702091",
+      appId: "1:578702091:web:46a4d770df6654f1dd700e",
+      measurementId: "G-7L7M6S17N2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+
+  <style>
+    :root {
+      --bg1: #0b1329; --bg2: #1c2a4a; --card: rgba(23, 33, 58, 0.9);
+      --text: #f8fafc; --muted: #94a3b8; --btn: #2563eb;
+      --accent: #f59e0b; --danger: #ef4444; --gold: #fbbf24;
+    }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text); min-height: 100vh; display: flex;
+      align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
+    }
+    #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+    
+    .app {
+      width: min(1400px, 100%); display: grid;
+      grid-template-columns: 320px 1.1fr 380px; gap: 12px;
+    }
+    @media (max-width: 1100px) { .app { grid-template-columns: 1fr; } }
+    header {
+      grid-column: 1 / -1; background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px;
+      padding: 10px 16px; display: flex; align-items: center;
+      justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    }
+    .pillrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill {
+      background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--muted);
+    }
+    .pill b { color: var(--text); }
+    .card {
+      background: var(--card); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px; padding: 14px; backdrop-filter: blur(10px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+    }
+    .avatar-display {
+      width: 100%; height: 300px; background: radial-gradient(circle, #2d3748 0%, #0f172a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 14px;
+      position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .avatar-display svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+    .map-wrapper {
+      position: relative; width: 100%; height: 340px; border-radius: 14px;
+      background: #2d5a27; border: 2px solid #588157; overflow: hidden;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+    .map-svg { width: 100%; height: 100%; }
+    .bigQ { font-size: clamp(32px, 5vw, 50px); font-weight: 900; }
+    .progress { height: 10px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #3b82f6); transition: width 0.3s; }
+    .controls { display: flex; gap: 8px; margin-top: 10px; }
+    input[type="number"], input[type="text"] {
+      flex: 1; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; outline: none;
+    }
+    button {
+      cursor: pointer; border: 0; border-radius: 10px; padding: 10px 14px;
+      font-weight: 700; color: #fff; background: var(--btn); transition: transform 0.1s, opacity 0.15s;
+    }
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.nextActionBtn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); padding: 12px; }
+    
+    .optionsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .optBtn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); font-size: 18px; padding: 12px; }
+    .shopContainer { height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+    .shopItem {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08); font-size: 13px;
+    }
+    .modalOverlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; z-index: 1000; backdrop-filter: blur(8px);
+    }
+    .modal {
+      width: min(560px, 100%); background: #0f172a; border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 18px; padding: 22px; text-align: center; max-height: 90vh; overflow-y: auto;
+    }
+    .charSelectGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+    .charCard {
+      background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 14px; padding: 14px; cursor: pointer;
+    }
+    .charCard.selected { border-color: var(--accent); background: rgba(245,158,11,0.15); }
+    .leaderboardTable {
+      width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; text-align: left;
+    }
+    .leaderboardTable th, .leaderboardTable td {
+      padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .leaderboardTable th { color: var(--gold); }
+    .diffScene { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .diffBoxContainer { display: flex; gap: 10px; justify-content: center; width: 100%; }
+    .diffCard {
+      background: #1e293b; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
+      padding: 10px; width: 48%; position: relative; cursor: pointer;
+    }
+    .diffCard svg { width: 100%; height: auto; }
+    .trisGrid {
+      display: grid; grid-template-columns: repeat(3, 75px); gap: 8px;
+      justify-content: center; margin: 15px auto;
+    }
+    .trisCell {
+      width: 75px; height: 75px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px; font-size: 36px; font-weight: bold; display: flex;
+      align-items: center; justify-content: center; cursor: pointer; user-select: none;
+    }
+    .trisCell:hover { background: rgba(255,255,255,0.15); }
+    .miniGridChoice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .intrusoCard {
+      background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 12px; padding: 15px; font-size: 16px; cursor: pointer; transition: background 0.2s;
+    }
+    .intrusoCard:hover { background: rgba(255,255,255,0.18); }
+  </style>
+</head>
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <div class="modalOverlay" id="initModal">
+    <div class="modal">
+      <h2>👑 Scegli il tuo Eroe!</h2>
+      <p style="color: var(--muted); font-size:14px;">Inserisci il nome ed entra nel regno:</p>
+      <input type="text" id="charNameInput" placeholder="Nome dell'Eroe" style="width:90%; margin-bottom:12px;" />
+      <div class="charSelectGrid">
+        <div class="charCard selected" id="cardCavaliere" onclick="setGender('cavaliere')">
+          <div style="font-size:45px;">⚔️</div>
+          <b>Cavaliere Uomo</b>
+          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Salva la Principessa!</div>
+        </div>
+        <div class="charCard" id="cardPrincipessa" onclick="setGender('principessa')">
+          <div style="font-size:45px;">👸</div>
+          <b>Principessa Donna</b>
+          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Salva il Principe!</div>
+        </div>
+      </div>
+      <button style="width:100%; padding:12px;" onclick="startGame()">Inizia l'Avventura ➔</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="multiModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color: var(--gold);" id="multiTitle">🎓 Domanda di Cultura</h2>
+      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="multiGradeTag">Materia & Livello</div>
+      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="multiQuestionText">...</p>
+      
+      <div class="miniGridChoice" id="multiOptionsGrid"></div>
+      <div id="multiFeedback" style="margin-top:12px; font-weight:bold;"></div>
+      <button id="multiCloseBtn" style="width:100%; margin-top:14px; display:none;" onclick="closeMultiModal()">Continua il Cammino ➔</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="problemModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color: var(--gold);" id="problemTitle">📚 Problema del Regno</h2>
+      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="problemGradeTag">Livello Scuolainfanzia</div>
+      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="problemQuestionText">...</p>
+      
+      <div class="miniGridChoice" id="problemOptionsGrid"></div>
+      <div id="problemFeedback" style="margin-top:12px; font-weight:bold;"></div>
+      <button id="problemCloseBtn" style="width:100%; margin-top:14px; display:none;" onclick="closeProblemModal()">Continua il Cammino ➔</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="skillModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color: var(--gold);" id="skillTitle">🎯 Minigioco di Abilità</h2>
+      <p style="color:var(--muted); font-size:14px;" id="skillDesc">Dimostra le tue capacità per sbloccare la ricompensa!</p>
+      
+      <div id="skillContent"></div>
+      <div id="skillFeedback" style="margin-top:10px; font-weight:bold;"></div>
+      <button id="skillCloseBtn" style="width:100%; margin-top:12px; display:none;" onclick="closeSkillModal()">Continua il Cammino ➔</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="levelUpModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color:var(--gold);">🎉 LIVELLO SUPERATO!</h2>
+      <div style="font-size:55px; margin:10px 0;" id="levelUpMascot">🏰</div>
+      <p id="levelUpText" style="font-size:15px; line-height:1.4;"></p>
+      <button style="width:100%; margin-top:12px;" onclick="openShopModal()">Apri il Negozio 🛒</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="shopModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color:var(--gold);">🛒 Negozio del Regno</h2>
+      <p style="color:var(--muted); font-size:13px;">Acquista ed equipaggia i tuoi oggetti prima del prossimo livello!</p>
+      <div class="shopContainer" id="modalShopList" style="max-height: 250px; text-align: left;"></div>
+      <button style="width:100%; margin-top:16px; background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="startNextLevelFromShop()">Inizia Prossimo Livello ➔</button>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="gameOverModal" style="display:none;">
+    <div class="modal">
+      <h2 style="color:var(--danger);">💀 Game Over!</h2>
+      <p>Hai esaurito le tue vite lungo il percorso!</p>
+      
+      <h3 style="color: var(--gold); margin-top:15px;">🏆 Classifica Migliori Punteggi</h3>
+      <table class="leaderboardTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Eroe</th>
+            <th>Livello</th>
+            <th>Punti</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+      <button style="width:100%; margin-top:16px;" onclick="resetFullGame()">Ricomincia l'Avventura 🔄</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <header>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:26px;">🏰</span>
+        <div>
+          <b id="heroNameDisplay" style="font-size:16px;">Eroe</b>
+          <div style="font-size:11px; color:var(--muted);" id="heroTitleDisplay">Cavaliere</div>
+        </div>
+      </div>
+      <div class="pillrow">
+        <div class="pill">Vite <span id="livesDisplay">❤️❤️❤️❤️❤️</span></div>
+        <div class="pill">Livello <b id="pillLevel">1</b></div>
+        <div class="pill">Step <b id="pillStep">1/20</b></div>
+        <div class="pill">Monete 🪙 <b id="pillCoins">0</b></div>
+        <div class="pill">Punti ⭐ <b id="pillScore">0</b></div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h3 style="margin:0 0 8px 0;">Eroe Realistico</h3>
+      <div class="avatar-display">
+        <div id="avatarSvgBox" style="width:100%; height:100%;"></div>
+      </div>
+      <div style="font-size:12px; color:var(--muted); margin-top:8px; text-align:center;" id="equipSummary">
+        Equipaggiamento attivo
+      </div>
+    </section>
+
+    <main class="card" style="justify-content:space-between;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:var(--muted);">Sfida delle Tabelline</span>
+          <span style="font-size:13px; color:var(--muted);">Tempo: <b id="timerText" style="color:#fff; font-size:16px;">--</b></span>
+        </div>
+        <div class="progress"><div class="bar" id="progressBar"></div></div>
+        
+        <div style="text-align:center; padding: 25px 0;">
+          <div class="bigQ" id="questionText">...</div>
+        </div>
+        <div class="controls" id="inputControls">
+          <input id="answerInput" type="number" placeholder="Risultato" />
+          <button id="checkBtn">Conferma</button>
+        </div>
+        <div class="optionsGrid" id="optionsGrid" style="display:none;"></div>
+      </div>
+      <div>
+        <div id="feedback" style="margin:10px 0; padding:10px; border-radius:10px; background:rgba(255,255,255,0.05); min-height:20px; font-weight:600;"></div>
+        <button class="nextActionBtn" id="nextBtn" disabled>Prossima Domanda ➔</button>
+      </div>
+    </main>
+
+    <aside class="card" style="gap:12px;">
+      <div>
+        <h3 style="margin:0 0 6px 0;">🗺️ Mappa del Regno</h3>
+        <div class="map-wrapper">
+          <svg class="map-svg" viewBox="0 0 350 300" id="kingdomMapSvg">
+            <path d="M 30,280 C 120,280 120,210 200,210 C 280,210 300,130 180,120 C 80,110 90,40 175,40" 
+                  fill="none" stroke="#d4a373" stroke-width="28" stroke-linecap="round" />
+            <path d="M 30,280 C 120,280 120,210 200,210 C 280,210 300,130 180,120 C 80,110 90,40 175,40" 
+                  fill="none" stroke="#e9c46a" stroke-width="20" stroke-linecap="round" stroke-dasharray="6,6" />
+            <circle cx="50" cy="180" r="14" fill="#1b4332"/>
+            <circle cx="280" cy="260" r="18" fill="#1b4332"/>
+            <circle cx="310" cy="70" r="15" fill="#1b4332"/>
+            <circle cx="40" cy="60" r="12" fill="#1b4332"/>
+            <g transform="translate(145, 0)">
+              <rect x="10" y="15" width="40" height="30" fill="#6c757d"/>
+              <rect x="5" y="5" width="12" height="20" fill="#495057"/>
+              <rect x="43" y="5" width="12" height="20" fill="#495057"/>
+              <polygon points="5,5 11,-5 17,5" fill="#e63946"/>
+              <polygon points="43,5 49,-5 55,5" fill="#e63946"/>
+              <rect x="23" y="25" width="14" height="20" rx="7" fill="#212529"/>
+              <text x="30" y="-8" font-size="18" text-anchor="middle" id="mapTargetEmoji">👸</text>
+            </g>
+            <g id="playerToken" transform="translate(30,280)">
+              <circle cx="0" cy="0" r="14" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
+              <text x="0" y="5" font-size="14" text-anchor="middle" id="playerTokenEmoji">⚔️</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div style="flex:1;">
+        <h3 style="margin:0 0 4px 0;">🛒 Negozio Rapido</h3>
+        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Equipaggiamento Eroe</div>
+        <div class="shopContainer" id="sideShopList"></div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    if (type === 'correct') {
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+        gain.gain.setValueAtTime(0.1, now + idx * 0.07); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.12);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + idx * 0.07); osc.stop(now + idx * 0.07 + 0.12);
+      });
+    } else if (type === 'trash') {
+      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(160, now);
+      osc.frequency.linearRampToValueAtTime(40, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.3);
+    }
+  }
+
+  const canvas = document.getElementById('confettiCanvas');
+  const ctx = canvas.getContext('2d');
+  let confetti = [];
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resizeCanvas); resizeCanvas();
+  function triggerConfetti() {
+    for (let i = 0; i < 35; i++) {
+      confetti.push({
+        x: window.innerWidth / 2, y: window.innerHeight / 2,
+        vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.7) * 10,
+        size: Math.random() * 6 + 4, color: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'][Math.floor(Math.random()*4)],
+        life: 70
+      });
+    }
+  }
+  function drawConfetti() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    confetti.forEach((p, i) => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 1.5;
+      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+      if(p.life <= 0) confetti.splice(i, 1);
+    });
+    requestAnimationFrame(drawConfetti);
+  }
+  drawConfetti();
+
+  const CAVALIERE_ITEMS = Array.from({length: 30}, (_, i) => ({
+    id: `c${i+1}`, name: ["Elmo d'Acciaio", "Spada Reale", "Scudo di Ferro", "Corazza d'Argento", "Mantello Viola", "Stivali di Cuoio"][i%6] + ` Niv.${Math.floor(i/6)+1}`,
+    icon: ["🪖", "⚔️", "🛡️", "🥋", "🧥", "🥾"][i%6], slot: ["head", "handLeft", "handRight", "body", "cape", "feet"][i%6], price: (i+1)*20
+  }));
+  const PRINCIPESSA_ITEMS = Array.from({length: 30}, (_, i) => ({
+    id: `p${i+1}`, name: ["Tiara d'Oro", "Scettro Reale", "Aura Magica", "Abito Rosa", "Mantello di Seta", "Scarpe Dorate"][i%6] + ` Niv.${Math.floor(i/6)+1}`,
+    icon: ["👑", "🪄", "✨", "👗", "🧥", "👠"][i%6], slot: ["head", "handLeft", "handRight", "body", "cape", "feet"][i%6], price: (i+1)*20
+  }));
+  const PATH_COORDS = [
+    {x: 30, y: 280}, {x: 70, y: 280}, {x: 100, y: 260}, {x: 120, y: 230}, {x: 150, y: 210},
+    {x: 190, y: 210}, {x: 230, y: 210}, {x: 260, y: 190}, {x: 270, y: 160}, {x: 250, y: 135},
+    {x: 210, y: 125}, {x: 170, y: 120}, {x: 130, y: 115}, {x: 100, y: 95},  {x: 95, y: 70},
+    {x: 110, y: 50},  {x: 140, y: 40},  {x: 175, y: 35}
+  ];
+  let state = {
+    heroName: "Eroe", gender: "cavaliere", lives: 5, level: 1, step: 1, score: 0, coins: 0,
+    correctStreak: 0, inventory: [], equipped: {}, lastQuestionKey: "", skillGameIndex: 0
+  };
+  let currentRound = null;
+  let timerId = null;
+  let timeLeft = 0;
+  let answered = false;
+  let trisState = { board: [], active: false };
+
+  function setGender(g) {
+    state.gender = g;
+    document.getElementById('cardCavaliere').classList.toggle('selected', g === 'cavaliere');
+    document.getElementById('cardPrincipessa').classList.toggle('selected', g === 'principessa');
+  }
+  function startGame() {
+    const inputName = document.getElementById('charNameInput').value.trim();
+    state.heroName = inputName || (state.gender === 'cavaliere' ? 'Sir Lancelot' : 'Principessa Aurora');
+    document.getElementById('initModal').style.display = 'none';
+    updateHeader();
+    renderKingdomMap();
+    renderAvatarSVG();
+    renderShop();
+    renderRound();
+  }
+  function updateHeader() {
+    document.getElementById('heroNameDisplay').textContent = state.heroName;
+    document.getElementById('heroTitleDisplay').textContent = state.gender === 'cavaliere' ? 'Cavaliere Uomo' : 'Principessa Donna';
+    document.getElementById('livesDisplay').textContent = "❤️".repeat(Math.max(0, state.lives));
+    document.getElementById('pillLevel').textContent = state.level;
+    document.getElementById('pillStep').textContent = `${state.step}/20`;
+    document.getElementById('pillCoins').textContent = state.coins;
+    document.getElementById('pillScore').textContent = state.score;
+  }
+  function renderAvatarSVG() {
+    const box = document.getElementById('avatarSvgBox');
+    const isCav = state.gender === 'cavaliere';
+    if (isCav) {
+      box.innerHTML = `
+        <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="100" cy="245" rx="50" ry="8" fill="rgba(0,0,0,0.5)"/>
+          <path d="M55,95 L30,235 L170,235 L145,95 Z" fill="#7e22ce"/>
+          <rect x="75" y="190" width="20" height="45" fill="#334155"/>
+          <rect x="105" y="190" width="20" height="45" fill="#334155"/>
+          <path d="M65,95 L135,95 L140,195 L60,195 Z" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
+          <path d="M80,95 L120,95 L115,160 L85,160 Z" fill="#2563eb"/>
+          <circle cx="100" cy="65" r="26" fill="#fdba74"/>
+          <path d="M72,60 Q100,30 128,60 Q125,45 100,42 Q75,45 72,60" fill="#451a03"/>
+          <circle cx="92" cy="65" r="3" fill="#0f172a"/>
+          <circle cx="108" cy="65" r="3" fill="#0f172a"/>
+          <path d="M94,77 Q100,82 106,77" stroke="#0f172a" stroke-width="2" fill="none"/>
+          <text x="100" y="32" font-size="26" text-anchor="middle">${state.equipped.head || ''}</text>
+          <text x="40" y="150" font-size="28" text-anchor="middle">${state.equipped.handLeft || '⚔️'}</text>
+          <text x="160" y="150" font-size="28" text-anchor="middle">${state.equipped.handRight || '🛡️'}</text>
+        </svg>
+      `;
+    } else {
+      box.innerHTML = `
+        <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="100" cy="245" rx="50" ry="8" fill="rgba(0,0,0,0.5)"/>
+          <path d="M60,60 C40,120 45,220 70,230 C80,180 120,180 130,230 C155,220 160,120 140,60 Z" fill="#facc15"/>
+          <path d="M65,100 L135,100 L165,240 L35,240 Z" fill="#ec4899" stroke="#be185d" stroke-width="2"/>
+          <path d="M80,100 L120,100 L140,240 L60,240 Z" fill="#f472b6"/>
+          <path d="M75,90 L125,90 L120,130 L80,130 Z" fill="#db2777"/>
+          <circle cx="100" cy="65" r="26" fill="#fde047"/>
+          <circle cx="100" cy="67" r="23" fill="#ffedd5"/>
+          <circle cx="91" cy="65" r="4" fill="#0284c7"/>
+          <circle cx="109" cy="65" r="4" fill="#0284c7"/>
+          <path d="M94,76 Q100,81 106,76" stroke="#e11d48" stroke-width="2" fill="none"/>
+          <polygon points="82,46 90,32 100,43 110,32 118,46" fill="#fbbf24" stroke="#d97706"/>
+          <text x="100" y="28" font-size="26" text-anchor="middle">${state.equipped.head || ''}</text>
+          <text x="40" y="150" font-size="28" text-anchor="middle">${state.equipped.handLeft || '✨'}</text>
+          <text x="160" y="150" font-size="28" text-anchor="middle">${state.equipped.handRight || ''}</text>
+        </svg>
+      `;
+    }
+  }
+  function renderKingdomMap() {
+    document.getElementById('mapTargetEmoji').textContent = state.gender === 'cavaliere' ? '👸' : '🤴';
+    document.getElementById('playerTokenEmoji').textContent = state.gender === 'cavaliere' ? '⚔️' : '👸';
+    const pathIndex = Math.min(PATH_COORDS.length - 1, Math.floor((state.step - 1) * (PATH_COORDS.length / 20)));
+    const pos = PATH_COORDS[pathIndex];
+    document.getElementById('playerToken').setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+  }
+  function renderShop() {
+    const list = document.getElementById('sideShopList');
+    const modalList = document.getElementById('modalShopList');
+    list.innerHTML = ""; modalList.innerHTML = "";
+    const items = state.gender === 'cavaliere' ? CAVALIERE_ITEMS : PRINCIPESSA_ITEMS;
+    items.forEach(g => {
+      const owned = state.inventory.includes(g.id);
+      const isEquipped = state.equipped[g.slot] === g.icon;
+      
+      const itemHTML = `
+        <div><b>${g.icon} ${g.name}</b><br/><small style="color:var(--muted);">${owned ? 'Posseduto' : g.price + ' 🪙'}</small></div>
+        <button style="padding:4px 8px; font-size:11px;" onclick="buyOrEquip('${g.id}')">
+          ${!owned ? 'Compra' : (isEquipped ? 'In Uso' : 'Indossa')}
+        </button>
+      `;
+      const item1 = document.createElement('div'); item1.className = 'shopItem'; item1.innerHTML = itemHTML;
+      const item2 = document.createElement('div'); item2.className = 'shopItem'; item2.innerHTML = itemHTML;
+      list.appendChild(item1); modalList.appendChild(item2);
+    });
+  }
+  function buyOrEquip(id) {
+    const items = state.gender === 'cavaliere' ? CAVALIERE_ITEMS : PRINCIPESSA_ITEMS;
+    const g = items.find(x => x.id === id);
+    if (!state.inventory.includes(g.id)) {
+      if (state.coins >= g.price) {
+        state.coins -= g.price;
+        state.inventory.push(g.id);
+        state.equipped[g.slot] = g.icon;
+      } else { alert("Monete insufficienti!"); return; }
+    } else {
+      state.equipped[g.slot] = (state.equipped[g.slot] === g.icon) ? "" : g.icon;
+    }
+    updateHeader(); renderAvatarSVG(); renderShop();
+  }
+  function generateRound(level) {
+    const minTable = Math.min(level, 7);
+    const maxTable = Math.min(level + 2, 9);
+    
+    let t, k, key;
+    do {
+      t = Math.floor(Math.random() * (maxTable - minTable + 1)) + minTable;
+      k = Math.floor(Math.random() * 10) + 1;
+      key = `${t}x${k}`;
+    } while (key === state.lastQuestionKey);
+    state.lastQuestionKey = key;
+    return { question: `${t} × ${k} = ?`, answer: t * k };
+  }
+  function renderRound() {
+    currentRound = generateRound(state.level);
+    document.getElementById('questionText').textContent = currentRound.question;
+    document.getElementById('feedback').textContent = "Rispondi per avanzare!";
+    document.getElementById('feedback').style.color = "var(--text)";
+    document.getElementById('nextBtn').disabled = true;
+    const isMC = state.level <= 2;
+    document.getElementById('inputControls').style.display = isMC ? "none" : "flex";
+    document.getElementById('optionsGrid').style.display = isMC ? "grid" : "none";
+    if(isMC) {
+      const grid = document.getElementById('optionsGrid');
+      grid.innerHTML = "";
+      const opts = [currentRound.answer, currentRound.answer + 2, Math.max(1, currentRound.answer - 3), currentRound.answer + 5].sort(() => Math.random() - 0.5);
+      opts.forEach(opt => {
+        const b = document.createElement('button');
+        b.className = 'optBtn'; b.textContent = opt;
+        b.onclick = () => checkAnswer(opt);
+        grid.appendChild(b);
+      });
+    }
+    document.getElementById('answerInput').value = "";
+    answered = false;
+    startTimer(20);
+  }
+  function startTimer(sec) {
+    if(timerId) clearInterval(timerId);
+    timeLeft = sec;
+    document.getElementById('timerText').textContent = `${timeLeft}s`;
+    timerId = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timerText').textContent = `${timeLeft}s`;
+      if(timeLeft <= 0) { clearInterval(timerId); if(!answered) checkAnswer(-1); }
+    }, 1000);
+  }
+  function checkAnswer(val) {
+    if(answered) return;
+    answered = true;
+    clearInterval(timerId);
+    if(val === currentRound.answer) {
+      state.coins += 10; state.score += 20; state.correctStreak++;
+      playSound('correct'); triggerConfetti();
+      document.getElementById('feedback').textContent = "🎉 Corretto! Avanzi sul percorso!";
+      document.getElementById('feedback').style.color = "#22c55e";
+    } else {
+      state.lives--; state.correctStreak = 0;
+      playSound('trash');
+      document.getElementById('feedback').textContent = `❌ Sbagliato! La risposta corretta era ${currentRound.answer}`;
+      document.getElementById('feedback').style.color = "#ef4444";
+      if(state.lives <= 0) { showGameOver(); return; }
+    }
+    document.getElementById('nextBtn').disabled = false;
+    updateHeader();
+  }
+  document.getElementById('checkBtn').onclick = () => checkAnswer(Number(document.getElementById('answerInput').value));
+  document.getElementById('nextBtn').onclick = () => {
+    state.step++;
+    renderKingdomMap();
+    if(state.correctStreak > 0 && state.correctStreak % 5 === 0) {
+      triggerSkillGame();
+      return;
+    }
+    if(state.correctStreak > 0 && state.correctStreak % 4 === 0) {
+      triggerMultiGame();
+      return;
+    }
+    if(state.correctStreak > 0 && state.correctStreak % 3 === 0) {
+      triggerProblemGame();
+      return;
+    }
+    if(state.step > 20) {
+      showLevelUpModal();
+      return;
+    }
+    renderRound();
+    updateHeader();
+  };
+
+  const MULTI_DATABASE = {
+    1: [
+      { subject: "🇮🇹 Italiano", text: "Qual è il contrario della parola 'alto'?", options: ["Basso", "Lungo", "Grande", "Stretto"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Qual è la capitale d'Italia?", options: ["Roma", "Milano", "Napoli", "Torino"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Di cosa hanno principalmente bisogno le piante per crescere con la fotosintesi?", options: ["Luce del sole e acqua", "Latte e zucchero", "Buio e vento", "Sabbia e sale"], correct: 0 },
+      { subject: "📜 Storia", text: "Chi costruì le famose Piramidi nell'antico Egitto?", options: ["Gli Egizi", "I Romani", "I Greci", "I Vichinghi"], correct: 0 }
+    ],
+    2: [
+      { subject: "🇮🇹 Italiano", text: "Qual è l'analisi grammaticale di 'velocemente'?", options: ["Avverbio", "Nome", "Verbo", "Aggettivo"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Quale catena montuosa separa l'Italia dalla Francia?", options: ["Le Alpi", "Gli Appennini", "I Pirenei", "I Carpazi"], correct: 0 },
+      { subject: "🔬 Scienze", text: "In quale stato si trova l'acqua quando diventa ghiaccio?", options: ["Stato Solido", "Stato Liquido", "Stato Gassoso", "Plasma"], correct: 0 },
+      { subject: "📜 Storia", text: "Quale grande civiltà nacque lungo le sponde del fiume Tevere?", options: ["La civiltà Romana", "La civiltà Egizia", "I Sumeri", "I Cinesi"], correct: 0 }
+    ],
+    3: [
+      { subject: "🇮🇹 Italiano", text: "Quale tra questi è un verbo al tempo Passato Prossimo?", options: ["Ho mangiato", "Mangerei", "Mangerò", "Mangio"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "In quale continente si trova il grande deserto del Sahara?", options: ["Africa", "Asia", "America", "Europa"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Qual è l'organo principale dell'apparato circolatorio umano?", options: ["Il Cuore", "I Polmoni", "Lo Stomaco", "Il Fegato"], correct: 0 },
+      { subject: "📜 Storia", text: "Cosa decretò tradizionalmente la fine dell'Impero Romano d'Occidente?", options: ["Le invasioni barbariche (476 d.C.)", "La scoperta dell'America", "La Prima Guerra Mondiale", "La Rivoluzione Francese"], correct: 0 }
+    ],
+    4: [
+      { subject: "🇮🇹 Italiano", text: "Nella frase 'Il cane abbaia forte', che funzione ha 'Il cane'?", options: ["Soggetto", "Complemento oggetto", "Predicato verbale", "Atto"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Qual è il fiume più lungo d'Italia?", options: ["Il Po", "L'Adige", "Il Tevere", "L'Arno"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Qual è la particella fondamentale della materia formata da nucleo ed elettroni?", options: ["Atomo", "Cellula", "Tessuto", "Galassia"], correct: 0 },
+      { subject: "📜 Storia", text: "In quale anno avvenne la scoperta dell'America ad opera di Cristoforo Colombo?", options: ["1492", "1350", "1600", "1789"], correct: 0 }
+    ],
+    5: [
+      { subject: "🇮🇹 Italiano", text: "Che cos'è una 'similitudine' nelle figure retoriche?", options: ["Un paragone tra elementi introdotto da 'come'", "Un'esagerazione del concetto", "Una ripetizione di suoni", "Un'inversione di parole"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Qual è la capitale attuale della Germania?", options: ["Berlino", "Monaco", "Francoforte", "Amburgo"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Quale pianeta del nostro Sistema Solare è soprannominato il 'Pianeta Rosso'?", options: ["Marte", "Venere", "Giove", "Saturno"], correct: 0 },
+      { subject: "📜 Storia", text: "Quale grande evento storico ebbe inizio nel 1789 con la presa della Bastiglia?", options: ["La Rivoluzione Francese", "La Guerra dei Cent'Anni", "La Rivoluzione Industriale", "Il Rinascimento"], correct: 0 }
+    ],
+    6: [
+      { subject: "🇮🇹 Italiano", text: "Qual è la forma corretta del congiuntivo imperfetto del verbo 'essere' (egli)?", options: ["Fosse", "Sia", "Sarebbe", "Fera"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Qual è lo stretto di mare che separa l'Europa dal continente Africano?", options: ["Stretto di Gibilterra", "Stretto di Messina", "Stretto dei Dardanelli", "Canale di Suez"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Qual è la formula chimica dell'anidride carbonica?", options: ["CO₂", "H₂O", "NaCl", "O₂"], correct: 0 },
+      { subject: "📜 Storia", text: "In quale periodo storico si è svolta la Seconda Guerra Mondiale?", options: ["1939 - 1945", "1914 - 1918", "1950 - 1960", "1800 - 1815"], correct: 0 }
+    ]
+  };
+  const MULTI_GRADE_LABELS = { 1: "3ª Elementare", 2: "4ª Elementare", 3: "5ª Elementare", 4: "1ª Media", 5: "2ª Media", 6: "3ª Media" };
+  
+  function triggerMultiGame() {
+    const lvlKey = Math.min(state.level, 6);
+    const questions = MULTI_DATABASE[lvlKey];
+    const item = questions[Math.floor(Math.random() * questions.length)];
+    const rawOptions = [...item.options];
+    const correctText = rawOptions[item.correct];
+    const shuffledOptions = [...rawOptions].sort(() => Math.random() - 0.5);
+    const newCorrectIndex = shuffledOptions.indexOf(correctText);
+    document.getElementById('multiTitle').textContent = `🎓 Challenge Multidisciplinare`;
+    document.getElementById('multiGradeTag').textContent = `${item.subject} • Livello: ${MULTI_GRADE_LABELS[lvlKey]}`;
+    document.getElementById('multiQuestionText').textContent = item.text;
+    const grid = document.getElementById('multiOptionsGrid');
+    grid.innerHTML = "";
+    shuffledOptions.forEach((optText, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'optBtn';
+      btn.textContent = optText;
+      btn.onclick = () => checkMultiAnswer(idx, newCorrectIndex, correctText);
+      grid.appendChild(btn);
+    });
+    document.getElementById('multiFeedback').textContent = "";
+    document.getElementById('multiCloseBtn').style.display = 'none';
+    document.getElementById('multiModal').style.display = 'flex';
+  }
+  function checkMultiAnswer(chosen, correct, correctText) {
+    const optionsButtons = document.querySelectorAll('#multiOptionsGrid button');
+    optionsButtons.forEach(btn => btn.disabled = true);
+    const fb = document.getElementById('multiFeedback');
+    if(chosen === correct) {
+      playSound('correct'); triggerConfetti();
+      state.coins += 35; state.score += 50; updateHeader();
+      fb.textContent = "🎉 Risposta Corretta! +35 Monete & +50 Punti!";
+      fb.style.color = "#22c55e";
+    } else {
+      playSound('trash');
+      fb.textContent = `❌ Errato! La risposta corretta era: ${correctText}`;
+      fb.style.color = "#ef4444";
+    }
+    document.getElementById('multiCloseBtn').style.display = 'block';
+  }
+  function closeMultiModal() {
+    document.getElementById('multiModal').style.display = 'none';
+    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
+  }
+
+  const PROBLEMS_DATABASE = {
+    1: [
+      { text: "Luca ha 4 scatole con 6 matite ciascuna. Quante matite ha in tutto?", options: ["24", "10", "18", "20"], correct: 0 },
+      { text: "In una classe ci sono 24 alunni divisi in 4 gruppi uguali. Quanti alunni ci sono per gruppo?", options: ["5", "6", "8", "4"], correct: 1 },
+      { text: "Anna ha 50€. Compra un libro da 18€ e un quaderno da 5€. Quanti euro le rimangono?", options: ["25€", "32€", "27€", "20€"], correct: 2 },
+      { text: "Un fioraio crea 7 mazzi di rose. Se ogni mazzo ha 5 rose, quante rose usa in tutto?", options: ["35", "30", "40", "25"], correct: 0 }
+    ],
+    2: [
+      { text: "Un rettangolo ha la base di 10 cm e l'altezza di 4 cm. Qual è il suo perimetro?", options: ["40 cm", "28 cm", "14 cm", "24 cm"], correct: 1 },
+      { text: "In un frutteto ci sono 100 alberi. I 3/5 sono meli. Quanti meli ci sono?", options: ["30", "50", "60", "45"], correct: 2 },
+      { text: "Una torta pesa 800 grammi. Se ne mangiamo i 2/4, quanti grammi rimangono?", options: ["400g", "200g", "600g", "500g"], correct: 0 },
+      { text: "Un treno parte con 120 passeggeri. Alla prima fermata ne scendono 30 e ne salgono 15. Quanti sono ora?", options: ["105", "135", "90", "115"], correct: 0 }
+    ],
+    3: [
+      { text: "Un quadrato ha il lato lungo 9 cm. Qual è la sua Area?", options: ["36 cm²", "81 cm²", "18 cm²", "72 cm²"], correct: 1 },
+      { text: "Un negoziante compra 10 maglie a 15€ l'una e le rivende a 22€ l'una. Qual è il guadagno totale?", options: ["70€", "150€", "220€", "50€"], correct: 0 },
+      { text: "Se una corsa in taxi costa 3€ fissi più 2€ a km, quanto costa un viaggio di 8 km?", options: ["16€", "19€", "21€", "18€"], correct: 1 },
+      { text: "Tre amici dividono equamente un conto di 45€. Aggiungono 6€ di mancia totale. Quanto paga ognuno?", options: ["17€", "15€", "21€", "19€"], correct: 0 }
+    ],
+    4: [
+      { text: "Calcola il valore dell'espressione: (15 - 3) × 4 + 10", options: ["58", "48", "38", "68"], correct: 0 },
+      { text: "Qual è il Minimo Comune Multiplo (m.c.m.) tra 6 e 8?", options: ["48", "12", "24", "18"], correct: 2 },
+      { text: "Un maglione da 80€ è scontato del 25%. Quanto costa ora il maglione?", options: ["60€", "55€", "70€", "65€"], correct: 0 },
+      { text: "La somma di due numeri è 30 e uno è il doppio dell'altro. Qual è il numero più grande?", options: ["15", "20", "25", "10"], correct: 1 }
+    ],
+    5: [
+      { text: "In un triangolo rettangolo i cateti misurano 6 cm e 8 cm. Quanto misura l'ipotenusa?", options: ["10 cm", "14 cm", "12 cm", "9 cm"], correct: 0 },
+      { text: "Se 4 operai impiegano 6 ore per un lavoro, quante ore impiegano 8 operai per lo stesso lavoro?", options: ["12 ore", "3 ore", "4 ore", "2 ore"], correct: 1 },
+      { text: "Calcola la media aritmetica dei voti: 7, 8, 6, 9, 10.", options: ["7.5", "8.5", "8.0", "9.0"], correct: 2 },
+      { text: "Un cerchio ha raggio 5 cm. Qual è la sua circonferenza? (usa π = 3.14)", options: ["31.4 cm", "15.7 cm", "78.5 cm", "62.8 cm"], correct: 0 }
+    ],
+    6: [
+      { text: "Risolvi l'equazione di 1° grado: 3x + 5 = 20. Qual è il valore di x?", options: ["5", "4", "6", "15"], correct: 0 },
+      { text: "Un cubo ha lo spigolo di 4 cm. Qual è il suo volume totale?", options: ["16 cm³", "64 cm³", "32 cm³", "96 cm³"], correct: 1 },
+      { text: "Qual è l'area di un cerchio avente raggio di 10 cm? (usa π = 3.14)", options: ["314 cm²", "62.8 cm²", "100 cm²", "31.4 cm²"], correct: 0 },
+      { text: "Lanciando due dadi a 6 facce, qual è la probabilità che la somma sia 12?", options: ["1/36", "1/12", "1/6", "2/36"], correct: 0 }
+    ]
+  };
+  const GRADE_LABELS = { 1: "🎒 Problema: 3ª Elementare", 2: "🎒 Problema: 4ª Elementare", 3: "🎒 Problema: 5ª Elementare", 4: "📐 Problema: 1ª Media", 5: "📐 Problema: 2ª Media", 6: "📐 Problema: 3ª Media" };
+
+  function triggerProblemGame() {
+    const lvlKey = Math.min(state.level, 6);
+    const problems = PROBLEMS_DATABASE[lvlKey];
+    const problem = problems[Math.floor(Math.random() * problems.length)];
+    document.getElementById('problemTitle').textContent = `📚 Sfida Enigmatica del Regno`;
+    document.getElementById('problemGradeTag').textContent = GRADE_LABELS[lvlKey];
+    document.getElementById('problemQuestionText').textContent = problem.text;
+    const grid = document.getElementById('problemOptionsGrid');
+    grid.innerHTML = "";
+    problem.options.forEach((optText, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'optBtn';
+      btn.textContent = optText;
+      btn.onclick = () => checkProblemAnswer(idx, problem.correct, problem.options[problem.correct]);
+      grid.appendChild(btn);
+    });
+    document.getElementById('problemFeedback').textContent = "";
+    document.getElementById('problemCloseBtn').style.display = 'none';
+    document.getElementById('problemModal').style.display = 'flex';
+  }
+  function checkProblemAnswer(chosen, correct, correctText) {
+    const optionsButtons = document.querySelectorAll('#problemOptionsGrid button');
+    optionsButtons.forEach(btn => btn.disabled = true);
+    const fb = document.getElementById('problemFeedback');
+    if(chosen === correct) {
+      playSound('correct'); triggerConfetti();
+      state.coins += 30; state.score += 40; updateHeader();
+      fb.textContent = "🎉 Eccellente! Hai risolto il problema! +30 Monete & +40 Punti!";
+      fb.style.color = "#22c55e";
+    } else {
+      playSound('trash');
+      fb.textContent = `❌ Peccato! La risposta corretta era: ${correctText}`;
+      fb.style.color = "#ef4444";
+    }
+    document.getElementById('problemCloseBtn').style.display = 'block';
+  }
+  function closeProblemModal() {
+    document.getElementById('problemModal').style.display = 'none';
+    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
+  }
+
+  function triggerSkillGame() {
+    const gameTypeIndex = state.skillGameIndex % 4;
+    state.skillGameIndex++;
+    const modal = document.getElementById('skillModal');
+    document.getElementById('skillFeedback').textContent = "";
+    document.getElementById('skillCloseBtn').style.display = 'none';
+    switch(gameTypeIndex) {
+      case 0: setupFindDiffGame(); break;
+      case 1: setupTrisGame(); break;
+      case 2: setupRebusGame(); break;
+      case 3: setupIntrusoGame(); break;
+    }
+    modal.style.display = 'flex';
+  }
+  function setupFindDiffGame() {
+    document.getElementById('skillTitle').textContent = `🎯 Trova la Differenza! (Livello ${state.level})`;
+    document.getElementById('skillDesc').textContent = "Osserva con attenzione le due immagini e tocca la differenza!";
+    const themes = [
+      {
+        title: "Il Banchetto Reale",
+        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#a7f3d0"/><circle cx="80" cy="20" r="10" fill="#fde047"/><text x="20" y="60" font-size="20">🧺</text><text x="50" y="60" font-size="16">🍎</text><text x="65" y="60" font-size="16">🎈</text></svg>`,
+        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#a7f3d0"/><circle cx="80" cy="20" r="10" fill="#fde047"/><text x="20" y="60" font-size="20">🧺</text><text x="50" y="60" font-size="16">🍎</text><text x="65" y="60" font-size="16" onclick="skillWin(30, 'Hai trovato la differenza nel banchetto!')" style="cursor:pointer;">🐥</text></svg>`
+      },
+      {
+        title: "Il Bosco Incantato",
+        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14">🍄</text></svg>`,
+        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14" onclick="skillWin(30, 'Hai trovato il fiore tra gli alberi!')" style="cursor:pointer;">🌸</text></svg>`
+      },
+      {
+        title: "Stalla delle Cavalcature",
+        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#fef08a"/><text x="15" y="55" font-size="22">🚜</text><text x="50" y="55" font-size="18">🐮</text><text x="75" y="55" font-size="18">🐥</text></svg>`,
+        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#fef08a"/><text x="15" y="55" font-size="22">🚜</text><text x="50" y="55" font-size="18" onclick="skillWin(30, 'Hai scovato il maialino stravagante!')" style="cursor:pointer;">🐷</text><text x="75" y="55" font-size="18">🐥</text></svg>`
+      }
+    ];
+    const currentTheme = themes[(state.level - 1) % themes.length];
+    document.getElementById('skillContent').innerHTML = `
+      <div class="diffScene">
+        <div style="font-weight:bold; margin-bottom:5px;">${currentTheme.title}</div>
+        <div class="diffBoxContainer">
+          <div class="diffCard" onclick="skillFail('Nessuna differenza qui!')">${currentTheme.cardA}</div>
+          <div class="diffCard">${currentTheme.cardB}</div>
+        </div>
+      </div>
+    `;
+  }
+  function setupTrisGame() {
+    document.getElementById('skillTitle').textContent = `❌ TRIS VS AI ⭕ (Livello ${state.level})`;
+    document.getElementById('skillDesc').textContent = `Affronta l'IA del Regno! (Intelligenza potenziata con i livelli)`;
+    trisState = { board: Array(9).fill(''), active: true };
+    renderTrisGrid();
+  }
+  function renderTrisGrid() {
+    let gridHTML = `<div class="trisGrid">`;
+    for(let i=0; i<9; i++) {
+      gridHTML += `<div class="trisCell" onclick="makeTrisMove(${i})">${trisState.board[i]}</div>`;
+    }
+    gridHTML += `</div>`;
+    document.getElementById('skillContent').innerHTML = gridHTML;
+  }
+  function makeTrisMove(idx) {
+    if(!trisState.active || trisState.board[idx] !== '') return;
+    trisState.board[idx] = '❌';
+    renderTrisGrid();
+    if(checkTrisWin('❌')) {
+      skillWin(40, "🎉 Impresa! Hai battuto l'IA a Tris! +40 Monete!");
+      trisState.active = false;
+      return;
+    }
+    if(trisState.board.every(cell => cell !== '')) {
+      skillWin(20, "🤝 Pareggio tattico! +20 Monete!");
+      trisState.active = false;
+      return;
+    }
+    setTimeout(() => {
+      let aiMove = getAiMove();
+      if(aiMove !== -1) {
+        trisState.board[aiMove] = '⭕';
+        renderTrisGrid();
+        if(checkTrisWin('⭕')) {
+          skillFail("🤖 L'IA ti ha battuto! Studia una nuova strategia!");
+          trisState.active = false;
+        } else if(trisState.board.every(cell => cell !== '')) {
+          skillWin(20, "🤝 Pareggio tattico! +20 Monete!");
+          trisState.active = false;
+        }
+      }
+    }, 250);
+  }
+  function getAiMove() {
+    const emptyIndices = trisState.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+    if(emptyIndices.length === 0) return -1;
+    if(state.level >= 2) {
+      for(let idx of emptyIndices) {
+        trisState.board[idx] = '⭕';
+        if(checkTrisWin('⭕')) { trisState.board[idx] = ''; return idx; }
+        trisState.board[idx] = '';
+      }
+      for(let idx of emptyIndices) {
+        trisState.board[idx] = '❌';
+        if(checkTrisWin('❌')) { trisState.board[idx] = ''; return idx; }
+        trisState.board[idx] = '';
+      }
+    }
+    if(state.level >= 4 && trisState.board[4] === '') { return 4; }
+    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  }
+  function checkTrisWin(sym) {
+    const wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
+    return wins.some(w => w.every(idx => trisState.board[idx] === sym));
+  }
+  function setupRebusGame() {
+    document.getElementById('skillTitle').textContent = `🧩 Risolvi il Rebus! (Livello ${state.level})`;
+    document.getElementById('skillDesc').textContent = "Decifra l'associazione visiva ed enigmistica!";
+    const rebuses = [
+      { prompt: "👑 (RE) + 🚌 (BUS)", options: ["REBUS", "ROBOT", "REGALO", "AUTOBUS"], correct: 0 },
+      { prompt: "🔤 C + 🐻 (ORSO)", options: ["CARTA", "CORSO", "ORSO", "CASO"], correct: 1 },
+      { prompt: "🔤 S + 🧙‍♂️ (MAGO)", options: ["STREGA", "DRAGO", "SMAGO", "MAGO"], correct: 2 },
+      { prompt: "🔤 F + 🚪 (ANTA)", options: ["FANTA", "PORTA", "FESTA", "FANTASMA"], correct: 0 },
+      { prompt: "🔤 M + 🐂 (TORO)", options: ["MOTORE", "TORO", "MOTO", "RACCHETTA"], correct: 0 },
+      { prompt: "🔤 P + 🍦 (ENNE)", options: ["PANNA", "PENNE", "PASTA", "PANE"], correct: 1 }
+    ];
+    const currentRebus = rebuses[(state.level - 1) % rebuses.length];
+    let html = `<div style="font-size:32px; margin:20px 0; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">${currentRebus.prompt}</div>`;
+    html += `<div class="miniGridChoice">`;
+    currentRebus.options.forEach((opt, idx) => {
+      html += `<button class="optBtn" onclick="checkRebusChoice(${idx}, ${currentRebus.correct})">${opt}</button>`;
+    });
+    html += `</div>`;
+    document.getElementById('skillContent').innerHTML = html;
+  }
+  function checkRebusChoice(chosen, correct) {
+    if(chosen === correct) { skillWin(35, "💡 Rebus Risolto con successo! +35 Monete!"); }
+    else { skillFail("Soluzione errata! Allena la tua mente!"); }
+  }
+  function setupIntrusoGame() {
+    document.getElementById('skillTitle').textContent = `🕵️ Trova l'Intruso! (Livello ${state.level})`;
+    document.getElementById('skillDesc').textContent = "Identifica l'elemento che non rispetta la regola logica!";
+    let intruderPool = [];
+    if(state.level <= 2) {
+      intruderPool = [
+        { title: "Quale tra questi animali NON vive in mare?", items: ["🐬 Delfino", "🐙 Piovra", "🦁 Leone", "🐳 Balena"], correct: 2 },
+        { title: "Quale tra questi numeri NON è PARI?", items: ["4", "8", "12", "9"], correct: 3 }
+      ];
+    } else if(state.level <= 4) {
+      const mult = Math.min(state.level + 2, 7);
+      intruderPool = [
+        { title: `Trova il numero che NON appartiene alla tabellina del ${mult}!`, items: [`${mult*2}`, `${mult*4}`, `${mult*3 + 1}`, `${mult*5}`], correct: 2 },
+        { title: "Quale simbolo NON è un'arma da Cavaliere?", items: ["⚔️ Spada", "🛡️ Scudo", "🏹 Arco", "🎨 Tavolozza"], correct: 3 }
+      ];
+    } else {
+      intruderPool = [
+        { title: "Quale operazione NON dà come risultato 24?", items: ["6 × 4", "3 × 8", "12 × 2", "5 × 5"], correct: 3 },
+        { title: "Quale tra questi valori NON è un numero PRIMO?", items: ["7", "11", "15", "13"], correct: 2 }
+      ];
+    }
+    const current = intruderPool[Math.floor(Math.random() * intruderPool.length)];
+    let html = `<div style="font-size:16px; font-weight:bold; margin-bottom:12px;">${current.title}</div>`;
+    html += `<div class="miniGridChoice">`;
+    current.items.forEach((item, idx) => {
+      html += `<div class="intrusoCard" onclick="checkIntruso(${idx}, ${current.correct})">${item}</div>`;
+    });
+    html += `</div>`;
+    document.getElementById('skillContent').innerHTML = html;
+  }
+  function checkIntruso(chosen, correct) {
+    if(chosen === correct) { skillWin(35, "🔍 Eccellente! Hai smascherato l'intruso! +35 Monete!"); }
+    else { skillFail("Risposta errata! Quello non era l'intruso."); }
+  }
+  function skillWin(reward, msg) {
+    playSound('correct'); triggerConfetti();
+    state.coins += reward; updateHeader();
+    const fb = document.getElementById('skillFeedback');
+    fb.textContent = msg; fb.style.color = "#22c55e";
+    document.getElementById('skillCloseBtn').style.display = 'block';
+  }
+  function skillFail(msg) {
+    playSound('trash');
+    const fb = document.getElementById('skillFeedback');
+    fb.textContent = msg; fb.style.color = "#ef4444";
+    document.getElementById('skillCloseBtn').style.display = 'block';
+  }
+  function closeSkillModal() {
+    document.getElementById('skillModal').style.display = 'none';
+    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
+  }
+  function showLevelUpModal() {
+    document.getElementById('levelUpText').innerHTML = `<b>${state.heroName}</b> ha completato con successo il <b>Livello ${state.level}</b>!`;
+    document.getElementById('levelUpModal').style.display = 'flex';
+  }
+  function openShopModal() {
+    document.getElementById('levelUpModal').style.display = 'none';
+    renderShop();
+    document.getElementById('shopModal').style.display = 'flex';
+  }
+  function startNextLevelFromShop() {
+    document.getElementById('shopModal').style.display = 'none';
+    state.step = 1;
+    state.level++;
+    updateHeader();
+    renderKingdomMap();
+    renderRound();
+  }
+  let leaderboard = JSON.parse(localStorage.getItem('tabelline_leaderboard') || '[]');
+  function showGameOver() {
+    leaderboard.push({ name: state.heroName, score: state.score, level: state.level });
+    leaderboard.sort((a,b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 5);
+    localStorage.setItem('tabelline_leaderboard', JSON.stringify(leaderboard));
+    const tbody = document.getElementById('leaderboardBody');
+    tbody.innerHTML = leaderboard.map((item, idx) => `
+      <tr>
+        <td><b>#${idx+1}</b></td>
+        <td>${item.name}</td>
+        <td>Lvl ${item.level}</td>
+        <td><b>${item.score}</b> pts</td>
+      </tr>
+    `).join('');
+    document.getElementById('gameOverModal').style.display = 'flex';
+  }
+  function resetFullGame() {
+    state.lives = 5; state.level = 1; state.step = 1; state.score = 0; state.coins = 0; state.correctStreak = 0;
+    document.getElementById('gameOverModal').style.display = 'none';
+    updateHeader(); renderKingdomMap(); renderRound();
+  }
+</script>
+</body>
+</html>
