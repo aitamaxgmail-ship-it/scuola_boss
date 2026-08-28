@@ -9,7 +9,6 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-
     const firebaseConfig = {
       apiKey: "AIzaSyC0-mF_HRAtNlGloPpuDP2yNkQkxItEyKQ",
       authDomain: "scuolaboss.firebaseapp.com",
@@ -20,11 +19,9 @@
       appId: "1:578702091:web:46a4d770df6654f1dd700e",
       measurementId: "G-7L7M6S17N2"
     };
-
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
   </script>
-
   <style>
     :root {
       --bg1: #0b1329; --bg2: #1c2a4a; --card: rgba(23, 33, 58, 0.9);
@@ -35,67 +32,75 @@
       margin: 0; font-family: system-ui, -apple-system, sans-serif;
       background: linear-gradient(135deg, var(--bg1), var(--bg2));
       color: var(--text); min-height: 100vh; display: flex;
-      align-items: center; justify-content: center; padding: 10px; box-sizing: border-box;
+      align-items: center; justify-content: center; padding: 6px; box-sizing: border-box;
     }
     #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
     
     .app {
-      width: min(1400px, 100%); display: grid;
-      grid-template-columns: 320px 1.1fr 380px; gap: 12px;
+      width: min(1200px, 100%); display: flex; flex-direction: column; gap: 8px;
     }
-    @media (max-width: 1100px) { .app { grid-template-columns: 1fr; } }
     header {
-      grid-column: 1 / -1; background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px;
-      padding: 10px 16px; display: flex; align-items: center;
-      justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
+      padding: 6px 12px; display: flex; align-items: center;
+      justify-content: space-between; gap: 8px; flex-wrap: wrap;
     }
-    .pillrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pillrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .pill {
       background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--muted);
+      border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--muted);
     }
     .pill b { color: var(--text); }
     .card {
       background: var(--card); border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 18px; padding: 14px; backdrop-filter: blur(10px);
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+      border-radius: 14px; padding: 10px 14px; backdrop-filter: blur(10px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4); display: flex; flex-direction: column;
     }
+    .hero-map-row {
+      display: grid; grid-template-columns: 220px 1fr; gap: 10px;
+    }
+    @media (max-width: 768px) { .hero-map-row { grid-template-columns: 1fr; } }
+    
     .avatar-display {
-      width: 100%; height: 300px; background: radial-gradient(circle, #2d3748 0%, #0f172a 100%);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 14px;
+      width: 100%; height: 160px; background: radial-gradient(circle, #2d3748 0%, #0f172a 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px;
       position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
-    .avatar-display svg { width: 100%; height: 100%; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+    .avatar-display svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
     .map-wrapper {
-      position: relative; width: 100%; height: 340px; border-radius: 14px;
+      position: relative; width: 100%; height: 160px; border-radius: 10px;
       background: #2d5a27; border: 2px solid #588157; overflow: hidden;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
     }
     .map-svg { width: 100%; height: 100%; }
-    .bigQ { font-size: clamp(32px, 5vw, 50px); font-weight: 900; }
-    .progress { height: 10px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+    .bigQ { font-size: clamp(26px, 3.5vw, 42px); font-weight: 900; }
+    .progress { height: 8px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin: 4px 0; }
     .bar { height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #3b82f6); transition: width 0.3s; }
-    .controls { display: flex; gap: 8px; margin-top: 10px; }
+    .controls { display: flex; gap: 8px; margin-top: 6px; }
     input[type="number"], input[type="text"] {
       flex: 1; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; outline: none;
+      border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 15px; outline: none;
     }
     button {
-      cursor: pointer; border: 0; border-radius: 10px; padding: 10px 14px;
+      cursor: pointer; border: 0; border-radius: 8px; padding: 8px 12px;
       font-weight: 700; color: #fff; background: var(--btn); transition: transform 0.1s, opacity 0.15s;
     }
     button:active { transform: scale(0.96); }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.nextActionBtn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); padding: 12px; }
+    button.nextActionBtn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); padding: 10px; }
     
-    .optionsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-    .optBtn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); font-size: 18px; padding: 12px; }
-    .shopContainer { height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+    .optionsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .optBtn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); font-size: 16px; padding: 8px; }
+    
+    .shopContainerGrid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;
+    }
+    .shopContainer { height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
     .shopItem {
       display: flex; justify-content: space-between; align-items: center;
-      background: rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 10px;
-      border: 1px solid rgba(255,255,255,0.08); font-size: 13px;
+      background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08); font-size: 12px;
     }
     .modalOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85);
@@ -146,7 +151,7 @@
 </head>
 <body>
   <canvas id="confettiCanvas"></canvas>
-
+  
   <div class="modalOverlay" id="initModal">
     <div class="modal">
       <h2>👑 Scegli il tuo Eroe!</h2>
@@ -216,7 +221,7 @@
     <div class="modal">
       <h2 style="color:var(--gold);">🛒 Negozio del Regno</h2>
       <p style="color:var(--muted); font-size:13px;">Acquista ed equipaggia i tuoi oggetti prima del prossimo livello!</p>
-      <div class="shopContainer" id="modalShopList" style="max-height: 250px; text-align: left;"></div>
+      <div class="shopContainer" id="modalShopList"></div>
       <button style="width:100%; margin-top:16px; background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="startNextLevelFromShop()">Inizia Prossimo Livello ➔</button>
     </div>
   </div>
@@ -238,17 +243,21 @@
         </thead>
         <tbody id="leaderboardBody"></tbody>
       </table>
-      <button style="width:100%; margin-top:16px;" onclick="resetFullGame()">Ricomincia l'Avventura 🔄</button>
+      
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button style="flex:1; background: var(--btn);" onclick="resetFullGame(false)">Continua 🔄</button>
+        <button style="flex:1; background: var(--accent);" onclick="resetFullGame(true)">Cambia Nome / Eroe 👑</button>
+      </div>
     </div>
   </div>
 
   <div class="app">
     <header>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:26px;">🏰</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:22px;">🏰</span>
         <div>
-          <b id="heroNameDisplay" style="font-size:16px;">Eroe</b>
-          <div style="font-size:11px; color:var(--muted);" id="heroTitleDisplay">Cavaliere</div>
+          <b id="heroNameDisplay" style="font-size:15px;">Eroe</b>
+          <div style="font-size:10px; color:var(--muted);" id="heroTitleDisplay">Cavaliere</div>
         </div>
       </div>
       <div class="pillrow">
@@ -260,25 +269,16 @@
       </div>
     </header>
 
-    <section class="card">
-      <h3 style="margin:0 0 8px 0;">Eroe Realistico</h3>
-      <div class="avatar-display">
-        <div id="avatarSvgBox" style="width:100%; height:100%;"></div>
-      </div>
-      <div style="font-size:12px; color:var(--muted); margin-top:8px; text-align:center;" id="equipSummary">
-        Equipaggiamento attivo
-      </div>
-    </section>
-
-    <main class="card" style="justify-content:space-between;">
+    <!-- 1. GIOCO PER PRIMO -->
+    <main class="card">
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:12px; color:var(--muted);">Sfida delle Tabelline</span>
-          <span style="font-size:13px; color:var(--muted);">Tempo: <b id="timerText" style="color:#fff; font-size:16px;">--</b></span>
+          <span style="font-size:12px; color:var(--muted);">Tempo: <b id="timerText" style="color:#fff; font-size:14px;">--</b></span>
         </div>
         <div class="progress"><div class="bar" id="progressBar"></div></div>
         
-        <div style="text-align:center; padding: 25px 0;">
+        <div style="text-align:center; padding: 10px 0;">
           <div class="bigQ" id="questionText">...</div>
         </div>
         <div class="controls" id="inputControls">
@@ -288,14 +288,25 @@
         <div class="optionsGrid" id="optionsGrid" style="display:none;"></div>
       </div>
       <div>
-        <div id="feedback" style="margin:10px 0; padding:10px; border-radius:10px; background:rgba(255,255,255,0.05); min-height:20px; font-weight:600;"></div>
+        <div id="feedback" style="margin:6px 0; padding:6px 10px; border-radius:8px; background:rgba(255,255,255,0.05); min-height:18px; font-weight:600; font-size:13px;"></div>
         <button class="nextActionBtn" id="nextBtn" disabled>Prossima Domanda ➔</button>
       </div>
     </main>
 
-    <aside class="card" style="gap:12px;">
-      <div>
-        <h3 style="margin:0 0 6px 0;">🗺️ Mappa del Regno</h3>
+    <!-- 2. EROE E MAPPA INSIEME SOTTO IL GIOCO -->
+    <div class="hero-map-row">
+      <section class="card" style="padding:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <b style="font-size:12px;">Eroe</b>
+          <span style="font-size:10px; color:var(--muted);" id="equipSummary">Attivo</span>
+        </div>
+        <div class="avatar-display">
+          <div id="avatarSvgBox" style="width:100%; height:100%;"></div>
+        </div>
+      </section>
+
+      <section class="card" style="padding:8px;">
+        <b style="font-size:12px; margin-bottom:4px; display:block;">🗺️ Mappa del Regno</b>
         <div class="map-wrapper">
           <svg class="map-svg" viewBox="0 0 350 300" id="kingdomMapSvg">
             <path d="M 30,280 C 120,280 120,210 200,210 C 280,210 300,130 180,120 C 80,110 90,40 175,40" 
@@ -321,13 +332,17 @@
             </g>
           </svg>
         </div>
+      </section>
+    </div>
+
+    <!-- 3. GADGET E NEGOZIO ALLA FINE -->
+    <section class="card" style="padding:8px 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <b style="font-size:13px;">🛒 Negozio & Gadget</b>
+        <span style="font-size:10px; color:var(--muted);">Equipaggiamento rapido</span>
       </div>
-      <div style="flex:1;">
-        <h3 style="margin:0 0 4px 0;">🛒 Negozio Rapido</h3>
-        <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Equipaggiamento Eroe</div>
-        <div class="shopContainer" id="sideShopList"></div>
-      </div>
-    </aside>
+      <div class="shopContainerGrid" id="sideShopList"></div>
+    </section>
   </div>
 
 <script>
@@ -352,7 +367,6 @@
       osc.start(now); osc.stop(now + 0.3);
     }
   }
-
   const canvas = document.getElementById('confettiCanvas');
   const ctx = canvas.getContext('2d');
   let confetti = [];
@@ -378,7 +392,6 @@
     requestAnimationFrame(drawConfetti);
   }
   drawConfetti();
-
   const CAVALIERE_ITEMS = Array.from({length: 30}, (_, i) => ({
     id: `c${i+1}`, name: ["Elmo d'Acciaio", "Spada Reale", "Scudo di Ferro", "Corazza d'Argento", "Mantello Viola", "Stivali di Cuoio"][i%6] + ` Niv.${Math.floor(i/6)+1}`,
     icon: ["🪖", "⚔️", "🛡️", "🥋", "🧥", "🥾"][i%6], slot: ["head", "handLeft", "handRight", "body", "cape", "feet"][i%6], price: (i+1)*20
@@ -402,7 +415,6 @@
   let timeLeft = 0;
   let answered = false;
   let trisState = { board: [], active: false };
-
   function setGender(g) {
     state.gender = g;
     document.getElementById('cardCavaliere').classList.toggle('selected', g === 'cavaliere');
@@ -600,7 +612,6 @@
     renderRound();
     updateHeader();
   };
-
   const MULTI_DATABASE = {
     1: [
       { subject: "🇮🇹 Italiano", text: "Qual è il contrario della parola 'alto'?", options: ["Basso", "Lungo", "Grande", "Stretto"], correct: 0 },
@@ -685,7 +696,6 @@
     document.getElementById('multiModal').style.display = 'none';
     if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
   }
-
   const PROBLEMS_DATABASE = {
     1: [
       { text: "Luca ha 4 scatole con 6 matite ciascuna. Quante matite ha in tutto?", options: ["24", "10", "18", "20"], correct: 0 },
@@ -725,7 +735,6 @@
     ]
   };
   const GRADE_LABELS = { 1: "🎒 Problema: 3ª Elementare", 2: "🎒 Problema: 4ª Elementare", 3: "🎒 Problema: 5ª Elementare", 4: "📐 Problema: 1ª Media", 5: "📐 Problema: 2ª Media", 6: "📐 Problema: 3ª Media" };
-
   function triggerProblemGame() {
     const lvlKey = Math.min(state.level, 6);
     const problems = PROBLEMS_DATABASE[lvlKey];
@@ -766,7 +775,6 @@
     document.getElementById('problemModal').style.display = 'none';
     if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
   }
-
   function triggerSkillGame() {
     const gameTypeIndex = state.skillGameIndex % 4;
     state.skillGameIndex++;
@@ -986,10 +994,15 @@
     `).join('');
     document.getElementById('gameOverModal').style.display = 'flex';
   }
-  function resetFullGame() {
+  function resetFullGame(changeHero = false) {
     state.lives = 5; state.level = 1; state.step = 1; state.score = 0; state.coins = 0; state.correctStreak = 0;
     document.getElementById('gameOverModal').style.display = 'none';
-    updateHeader(); renderKingdomMap(); renderRound();
+    if (changeHero) {
+      document.getElementById('charNameInput').value = state.heroName;
+      document.getElementById('initModal').style.display = 'flex';
+    } else {
+      updateHeader(); renderKingdomMap(); renderRound();
+    }
   }
 </script>
 </body>
