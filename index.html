@@ -147,6 +147,19 @@
       border-radius: 12px; padding: 15px; font-size: 16px; cursor: pointer; transition: background 0.2s;
     }
     .intrusoCard:hover { background: rgba(255,255,255,0.18); }
+
+    /* STILI MINIGIOCHI VISIVI EVOLUTIVI (LIVELLO 1) */
+    .memoryGrid { display: grid; gap: 8px; max-width: 360px; margin: 12px auto; }
+    .memoryCard { height: 60px; background: #1e293b; border: 2px solid var(--accent); border-radius: 10px; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: transform 0.2s, background 0.2s; }
+    .memoryCard.flipped { background: #334155; transform: rotateY(180deg); }
+    .mazeGrid { display: grid; grid-template-columns: repeat(5, 45px); gap: 5px; justify-content: center; margin: 12px auto; }
+    .mazeCell { width: 45px; height: 45px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+    .mazeWall { background: #334155; }
+    .mazePath { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); }
+    .colorPalette { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
+    .colorBtn { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; font-weight: bold; }
+    .colorBtn.selected { border-color: #fff; transform: scale(1.15); }
+    .colorRegion { cursor: pointer; transition: fill 0.2s; stroke: #fff; stroke-width: 1.5; }
   </style>
 </head>
 <body>
@@ -155,8 +168,13 @@
   <div class="modalOverlay" id="initModal">
     <div class="modal">
       <h2>👑 Scegli il tuo Eroe!</h2>
-      <p style="color: var(--muted); font-size:14px;">Inserisci il nome ed entra nel regno:</p>
-      <input type="text" id="charNameInput" placeholder="Nome dell'Eroe" style="width:90%; margin-bottom:12px;" />
+      <p style="color: var(--muted); font-size:14px; margin-bottom:8px;">Inserisci nome ed età per sbloccare la tua sfida:</p>
+      
+      <div style="display:flex; gap:8px; width:90%; margin:0 auto 12px auto;">
+        <input type="text" id="charNameInput" placeholder="Nome Eroe" style="flex:2;" />
+        <input type="number" id="charAgeInput" placeholder="Età" min="1" max="99" style="flex:1;" />
+      </div>
+
       <div class="charSelectGrid">
         <div class="charCard selected" id="cardCavaliere" onclick="setGender('cavaliere')">
           <div style="font-size:45px;">⚔️</div>
@@ -188,10 +206,11 @@
   <div class="modalOverlay" id="problemModal" style="display:none;">
     <div class="modal">
       <h2 style="color: var(--gold);" id="problemTitle">📚 Problema del Regno</h2>
-      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="problemGradeTag">Livello Scuolainfanzia</div>
-      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="problemQuestionText">...</p>
-      
-      <div class="miniGridChoice" id="problemOptionsGrid"></div>
+      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="problemGradeTag">Livello Scuola</div>
+      <div id="problemContentArea">
+        <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="problemQuestionText">...</p>
+        <div class="miniGridChoice" id="problemOptionsGrid"></div>
+      </div>
       <div id="problemFeedback" style="margin-top:12px; font-weight:bold;"></div>
       <button id="problemCloseBtn" style="width:100%; margin-top:14px; display:none;" onclick="closeProblemModal()">Continua il Cammino ➔</button>
     </div>
@@ -262,6 +281,7 @@
       </div>
       <div class="pillrow">
         <div class="pill">Vite <span id="livesDisplay">❤️❤️❤️❤️❤️</span></div>
+        <div class="pill">Fascia <b id="pillTier" style="color:var(--accent);">--</b></div>
         <div class="pill">Livello <b id="pillLevel">1</b></div>
         <div class="pill">Step <b id="pillStep">1/20</b></div>
         <div class="pill">Monete 🪙 <b id="pillCoins">0</b></div>
@@ -269,7 +289,6 @@
       </div>
     </header>
 
-    <!-- 1. GIOCO PER PRIMO -->
     <main class="card">
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -293,7 +312,6 @@
       </div>
     </main>
 
-    <!-- 2. EROE E MAPPA INSIEME SOTTO IL GIOCO -->
     <div class="hero-map-row">
       <section class="card" style="padding:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -335,7 +353,6 @@
       </section>
     </div>
 
-    <!-- 3. GADGET E NEGOZIO ALLA FINE -->
     <section class="card" style="padding:8px 12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <b style="font-size:13px;">🛒 Negozio & Gadget</b>
@@ -407,7 +424,7 @@
     {x: 110, y: 50},  {x: 140, y: 40},  {x: 175, y: 35}
   ];
   let state = {
-    heroName: "Eroe", gender: "cavaliere", lives: 5, level: 1, step: 1, score: 0, coins: 0,
+    heroName: "Eroe", heroAge: 10, ageTier: "kids", gender: "cavaliere", lives: 5, level: 1, step: 1, score: 0, coins: 0,
     correctStreak: 0, inventory: [], equipped: {}, lastQuestionKey: "", skillGameIndex: 0
   };
   let currentRound = null;
@@ -415,14 +432,31 @@
   let timeLeft = 0;
   let answered = false;
   let trisState = { board: [], active: false };
+  let memoryState = { flipped: [], matched: 0, totalPairs: 4, cards: [] };
+  let mazeState = { pos: {r:0, c:0}, grid: [] };
+  let colorState = { activeColor: 1, filled: {} };
+  
   function setGender(g) {
     state.gender = g;
     document.getElementById('cardCavaliere').classList.toggle('selected', g === 'cavaliere');
     document.getElementById('cardPrincipessa').classList.toggle('selected', g === 'principessa');
   }
+  
   function startGame() {
     const inputName = document.getElementById('charNameInput').value.trim();
+    const inputAge = parseInt(document.getElementById('charAgeInput').value);
+    
     state.heroName = inputName || (state.gender === 'cavaliere' ? 'Sir Lancelot' : 'Principessa Aurora');
+    state.heroAge = isNaN(inputAge) ? 10 : inputAge;
+    
+    if (state.heroAge <= 10) {
+      state.ageTier = 'kids';
+    } else if (state.heroAge <= 15) {
+      state.ageTier = 'teens';
+    } else {
+      state.ageTier = 'adults';
+    }
+    
     document.getElementById('initModal').style.display = 'none';
     updateHeader();
     renderKingdomMap();
@@ -430,15 +464,20 @@
     renderShop();
     renderRound();
   }
+  
   function updateHeader() {
-    document.getElementById('heroNameDisplay').textContent = state.heroName;
+    document.getElementById('heroNameDisplay').textContent = `${state.heroName} (${state.heroAge} anni)`;
     document.getElementById('heroTitleDisplay').textContent = state.gender === 'cavaliere' ? 'Cavaliere Uomo' : 'Principessa Donna';
     document.getElementById('livesDisplay').textContent = "❤️".repeat(Math.max(0, state.lives));
     document.getElementById('pillLevel').textContent = state.level;
     document.getElementById('pillStep').textContent = `${state.step}/20`;
     document.getElementById('pillCoins').textContent = state.coins;
     document.getElementById('pillScore').textContent = state.score;
+    
+    const tierLabels = { kids: "2ª-3ª Elem", teens: "5ª Elem-Media", adults: "Superior-Pro" };
+    document.getElementById('pillTier').textContent = tierLabels[state.ageTier];
   }
+  
   function renderAvatarSVG() {
     const box = document.getElementById('avatarSvgBox');
     const isCav = state.gender === 'cavaliere';
@@ -523,26 +562,61 @@
     }
     updateHeader(); renderAvatarSVG(); renderShop();
   }
+  
   function generateRound(level) {
-    const minTable = Math.min(level, 7);
-    const maxTable = Math.min(level + 2, 9);
-    
-    let t, k, key;
-    do {
-      t = Math.floor(Math.random() * (maxTable - minTable + 1)) + minTable;
-      k = Math.floor(Math.random() * 10) + 1;
-      key = `${t}x${k}`;
-    } while (key === state.lastQuestionKey);
-    state.lastQuestionKey = key;
-    return { question: `${t} × ${k} = ?`, answer: t * k };
+    let key;
+    if (state.ageTier === 'kids') {
+      const isMult = Math.random() > 0.4;
+      if (isMult) {
+        let t, k;
+        do {
+          t = Math.floor(Math.random() * 5) + 1;
+          let maxK = Math.floor(20 / t);
+          k = Math.floor(Math.random() * maxK) + 1;
+          key = `${t}x${k}`;
+        } while (key === state.lastQuestionKey);
+        state.lastQuestionKey = key;
+        return { question: `${t} × ${k} = ?`, answer: t * k };
+      } else {
+        const isAdd = Math.random() > 0.5;
+        if (isAdd) {
+          let a = Math.floor(Math.random() * 15) + 1;
+          let b = Math.floor(Math.random() * (20 - a)) + 1;
+          return { question: `${a} + ${b} = ?`, answer: a + b };
+        } else {
+          let a = Math.floor(Math.random() * 19) + 2;
+          let b = Math.floor(Math.random() * a) + 1;
+          return { question: `${a} - ${b} = ?`, answer: a - b };
+        }
+      }
+    } else {
+      let minTable, maxTable;
+      if (state.ageTier === 'teens') {
+        minTable = Math.min(level + 1, 4);
+        maxTable = Math.min(level + 4, 10);
+      } else {
+        minTable = Math.min(level + 2, 6);
+        maxTable = Math.min(level + 6, 12);
+      }
+      let t, k;
+      do {
+        t = Math.floor(Math.random() * (maxTable - minTable + 1)) + minTable;
+        k = Math.floor(Math.random() * 10) + 1;
+        key = `${t}x${k}`;
+      } while (key === state.lastQuestionKey);
+      state.lastQuestionKey = key;
+      return { question: `${t} × ${k} = ?`, answer: t * k };
+    }
   }
+  
   function renderRound() {
     currentRound = generateRound(state.level);
     document.getElementById('questionText').textContent = currentRound.question;
     document.getElementById('feedback').textContent = "Rispondi per avanzare!";
     document.getElementById('feedback').style.color = "var(--text)";
     document.getElementById('nextBtn').disabled = true;
-    const isMC = state.level <= 2;
+    
+    const isMC = state.level <= 2 && state.ageTier === 'kids';
     document.getElementById('inputControls').style.display = isMC ? "none" : "flex";
     document.getElementById('optionsGrid').style.display = isMC ? "grid" : "none";
     if(isMC) {
@@ -558,8 +632,14 @@
     }
     document.getElementById('answerInput').value = "";
     answered = false;
-    startTimer(20);
+    
+    let timeLimit = 20;
+    if (state.ageTier === 'kids') timeLimit = 25;
+    else if (state.ageTier === 'adults') timeLimit = 12;
+    
+    startTimer(timeLimit);
   }
+  
   function startTimer(sec) {
     if(timerId) clearInterval(timerId);
     timeLeft = sec;
@@ -570,6 +650,7 @@
       if(timeLeft <= 0) { clearInterval(timerId); if(!answered) checkAnswer(-1); }
     }, 1000);
   }
+  
   function checkAnswer(val) {
     if(answered) return;
     answered = true;
@@ -589,6 +670,7 @@
     document.getElementById('nextBtn').disabled = false;
     updateHeader();
   }
+  
   document.getElementById('checkBtn').onclick = () => checkAnswer(Number(document.getElementById('answerInput').value));
   document.getElementById('nextBtn').onclick = () => {
     state.step++;
@@ -612,54 +694,65 @@
     renderRound();
     updateHeader();
   };
+  
   const MULTI_DATABASE = {
     1: [
       { subject: "🇮🇹 Italiano", text: "Qual è il contrario della parola 'alto'?", options: ["Basso", "Lungo", "Grande", "Stretto"], correct: 0 },
       { subject: "🗺️ Geografia", text: "Qual è la capitale d'Italia?", options: ["Roma", "Milano", "Napoli", "Torino"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Di cosa hanno principalmente bisogno le piante per crescere con la fotosintesi?", options: ["Luce del sole e acqua", "Latte e zucchero", "Buio e vento", "Sabbia e sale"], correct: 0 },
-      { subject: "📜 Storia", text: "Chi costruì le famose Piramidi nell'antico Egitto?", options: ["Gli Egizi", "I Romani", "I Greci", "I Vichinghi"], correct: 0 }
+      { subject: "🔬 Scienze", text: "Di cosa hanno principalmente bisogno le piante per la fotosintesi?", options: ["Luce e acqua", "Latte e zucchero", "Buio e vento", "Sabbia e sale"], correct: 0 }
     ],
     2: [
-      { subject: "🇮🇹 Italiano", text: "Qual è l'analisi grammaticale di 'velocemente'?", options: ["Avverbio", "Nome", "Verbo", "Aggettivo"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Quale catena montuosa separa l'Italia dalla Francia?", options: ["Le Alpi", "Gli Appennini", "I Pirenei", "I Carpazi"], correct: 0 },
-      { subject: "🔬 Scienze", text: "In quale stato si trova l'acqua quando diventa ghiaccio?", options: ["Stato Solido", "Stato Liquido", "Stato Gassoso", "Plasma"], correct: 0 },
-      { subject: "📜 Storia", text: "Quale grande civiltà nacque lungo le sponde del fiume Tevere?", options: ["La civiltà Romana", "La civiltà Egizia", "I Sumeri", "I Cinesi"], correct: 0 }
+      { subject: "🇮🇹 Italiano", text: "Qual è il plurale di 'Luce'?", options: ["Luci", "Luces", "Lucie", "Luca"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Quale mare bagna le coste dell'Italia ad Est?", options: ["Mare Adriatico", "Mare Tirreno", "Oceano Atlantico", "Mar Nero"], correct: 0 },
+      { subject: "🔬 Scienze", text: "Quale animale è un mammifero?", options: ["Cane", "Aquila", "Squalo", "Rana"], correct: 0 }
     ],
     3: [
-      { subject: "🇮🇹 Italiano", text: "Quale tra questi è un verbo al tempo Passato Prossimo?", options: ["Ho mangiato", "Mangerei", "Mangerò", "Mangio"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "In quale continente si trova il grande deserto del Sahara?", options: ["Africa", "Asia", "America", "Europa"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Qual è l'organo principale dell'apparato circolatorio umano?", options: ["Il Cuore", "I Polmoni", "Lo Stomaco", "Il Fegato"], correct: 0 },
-      { subject: "📜 Storia", text: "Cosa decretò tradizionalmente la fine dell'Impero Romano d'Occidente?", options: ["Le invasioni barbariche (476 d.C.)", "La scoperta dell'America", "La Prima Guerra Mondiale", "La Rivoluzione Francese"], correct: 0 }
+      { subject: "🇮🇹 Italiano", text: "Qual è l'analisi grammaticale di 'velocemente'?", options: ["Avverbio", "Nome", "Verbo", "Aggettivo"], correct: 0 },
+      { subject: "🗺️ Geografia", text: "Quale catena montuosa separa l'Italia dalla Francia?", options: ["Le Alpi", "Gli Appennini", "I Pirenei", "I Carpazi"], correct: 0 },
+      { subject: "🔬 Scienze", text: "In quale stato si trova l'acqua quando diventa ghiaccio?", options: ["Stato Solido", "Stato Liquido", "Stato Gassoso", "Plasma"], correct: 0 }
     ],
     4: [
       { subject: "🇮🇹 Italiano", text: "Nella frase 'Il cane abbaia forte', che funzione ha 'Il cane'?", options: ["Soggetto", "Complemento oggetto", "Predicato verbale", "Atto"], correct: 0 },
       { subject: "🗺️ Geografia", text: "Qual è il fiume più lungo d'Italia?", options: ["Il Po", "L'Adige", "Il Tevere", "L'Arno"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Qual è la particella fondamentale della materia formata da nucleo ed elettroni?", options: ["Atomo", "Cellula", "Tessuto", "Galassia"], correct: 0 },
-      { subject: "📜 Storia", text: "In quale anno avvenne la scoperta dell'America ad opera di Cristoforo Colombo?", options: ["1492", "1350", "1600", "1789"], correct: 0 }
+      { subject: "🔬 Scienze", text: "Qual è l'organo principale dell'apparato circolatorio umano?", options: ["Il Cuore", "I Polmoni", "Lo Stomaco", "Il Fegato"], correct: 0 }
     ],
     5: [
-      { subject: "🇮🇹 Italiano", text: "Che cos'è una 'similitudine' nelle figure retoriche?", options: ["Un paragone tra elementi introdotto da 'come'", "Un'esagerazione del concetto", "Una ripetizione di suoni", "Un'inversione di parole"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Qual è la capitale attuale della Germania?", options: ["Berlino", "Monaco", "Francoforte", "Amburgo"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Quale pianeta del nostro Sistema Solare è soprannominato il 'Pianeta Rosso'?", options: ["Marte", "Venere", "Giove", "Saturno"], correct: 0 },
-      { subject: "📜 Storia", text: "Quale grande evento storico ebbe inizio nel 1789 con la presa della Bastiglia?", options: ["La Rivoluzione Francese", "La Guerra dei Cent'Anni", "La Rivoluzione Industriale", "Il Rinascimento"], correct: 0 }
+      { subject: "🇮🇹 Italiano", text: "Che cos'è una 'similitudine' nelle figure retoriche?", options: ["Un paragone introdotto da 'come'", "Un'esagerazione del concetto", "Una ripetizione di suoni", "Un'inversione di parole"], correct: 0 },
+      { subject: "🔬 Fisica/Scienze", text: "Qual è la particella fondamentale formata da nucleo ed elettroni?", options: ["Atomo", "Cellula", "Tessuto", "Galassia"], correct: 0 },
+      { subject: "📜 Storia", text: "In quale anno avvenne la rivoluzione o la scoperta dell'America ad opera di Colombo?", options: ["1492", "1350", "1789", "1914"], correct: 0 }
     ],
     6: [
-      { subject: "🇮🇹 Italiano", text: "Qual è la forma corretta del congiuntivo imperfetto del verbo 'essere' (egli)?", options: ["Fosse", "Sia", "Sarebbe", "Fera"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Qual è lo stretto di mare che separa l'Europa dal continente Africano?", options: ["Stretto di Gibilterra", "Stretto di Messina", "Stretto dei Dardanelli", "Canale di Suez"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Qual è la formula chimica dell'anidride carbonica?", options: ["CO₂", "H₂O", "NaCl", "O₂"], correct: 0 },
-      { subject: "📜 Storia", text: "In quale periodo storico si è svolta la Seconda Guerra Mondiale?", options: ["1939 - 1945", "1914 - 1918", "1950 - 1960", "1800 - 1815"], correct: 0 }
+      { subject: "🇮🇹 Italiano", text: "Qual è la forma del congiuntivo imperfetto del verbo 'essere' (egli)?", options: ["Fosse", "Sia", "Sarebbe", "Fera"], correct: 0 },
+      { subject: "🧪 Chimica", text: "Qual è la formula chimica dell'anidride carbonica?", options: ["CO₂", "H₂O", "NaCl", "O₂"], correct: 0 },
+      { subject: "📜 Storia", text: "In quale periodo si è svolta la Seconda Guerra Mondiale?", options: ["1939 - 1945", "1914 - 1918", "1950 - 1960", "1800 - 1815"], correct: 0 }
     ]
   };
-  const MULTI_GRADE_LABELS = { 1: "3ª Elementare", 2: "4ª Elementare", 3: "5ª Elementare", 4: "1ª Media", 5: "2ª Media", 6: "3ª Media" };
+  
+  const MULTI_GRADE_LABELS = { 
+    1: "2ª-3ª Elementare", 2: "4ª Elementare", 
+    3: "5ª Elementare", 4: "Scuola Media", 
+    5: "1ª-3ª Superiore", 6: "4ª-5ª Superiore" 
+  };
+  
+  function getLvlKeyByAge() {
+    if (state.ageTier === 'kids') {
+      return Math.min(Math.max(1, Math.floor(state.level / 2)), 2);
+    } else if (state.ageTier === 'teens') {
+      return Math.min(3 + Math.floor((state.level - 1) / 3), 4);
+    } else {
+      return Math.min(5 + Math.floor((state.level - 1) / 5), 6);
+    }
+  }
   
   function triggerMultiGame() {
-    const lvlKey = Math.min(state.level, 6);
+    const lvlKey = getLvlKeyByAge();
     const questions = MULTI_DATABASE[lvlKey];
     const item = questions[Math.floor(Math.random() * questions.length)];
     const rawOptions = [...item.options];
     const correctText = rawOptions[item.correct];
     const shuffledOptions = [...rawOptions].sort(() => Math.random() - 0.5);
     const newCorrectIndex = shuffledOptions.indexOf(correctText);
+    
     document.getElementById('multiTitle').textContent = `🎓 Challenge Multidisciplinare`;
     document.getElementById('multiGradeTag').textContent = `${item.subject} • Livello: ${MULTI_GRADE_LABELS[lvlKey]}`;
     document.getElementById('multiQuestionText').textContent = item.text;
@@ -676,6 +769,7 @@
     document.getElementById('multiCloseBtn').style.display = 'none';
     document.getElementById('multiModal').style.display = 'flex';
   }
+  
   function checkMultiAnswer(chosen, correct, correctText) {
     const optionsButtons = document.querySelectorAll('#multiOptionsGrid button');
     optionsButtons.forEach(btn => btn.disabled = true);
@@ -696,54 +790,68 @@
     document.getElementById('multiModal').style.display = 'none';
     if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
   }
+  
   const PROBLEMS_DATABASE = {
     1: [
-      { text: "Luca ha 4 scatole con 6 matite ciascuna. Quante matite ha in tutto?", options: ["24", "10", "18", "20"], correct: 0 },
-      { text: "In una classe ci sono 24 alunni divisi in 4 gruppi uguali. Quanti alunni ci sono per gruppo?", options: ["5", "6", "8", "4"], correct: 1 },
-      { text: "Anna ha 50€. Compra un libro da 18€ e un quaderno da 5€. Quanti euro le rimangono?", options: ["25€", "32€", "27€", "20€"], correct: 2 },
-      { text: "Un fioraio crea 7 mazzi di rose. Se ogni mazzo ha 5 rose, quante rose usa in tutto?", options: ["35", "30", "40", "25"], correct: 0 }
+      { text: "Luca ha 4 scatole con 2 matite ciascuna. Quante matite ha in tutto?", options: ["8", "6", "10", "4"], correct: 0 },
+      { text: "In una classe ci sono 12 alunni divisi in 2 gruppi uguali. Quanti alunni ci sono per gruppo?", options: ["5", "6", "8", "4"], correct: 1 }
     ],
     2: [
-      { text: "Un rettangolo ha la base di 10 cm e l'altezza di 4 cm. Qual è il suo perimetro?", options: ["40 cm", "28 cm", "14 cm", "24 cm"], correct: 1 },
-      { text: "In un frutteto ci sono 100 alberi. I 3/5 sono meli. Quanti meli ci sono?", options: ["30", "50", "60", "45"], correct: 2 },
-      { text: "Una torta pesa 800 grammi. Se ne mangiamo i 2/4, quanti grammi rimangono?", options: ["400g", "200g", "600g", "500g"], correct: 0 },
-      { text: "Un treno parte con 120 passeggeri. Alla prima fermata ne scendono 30 e ne salgono 15. Quanti sono ora?", options: ["105", "135", "90", "115"], correct: 0 }
+      { text: "Un fioraio crea 7 mazzi di rose. Se ogni mazzo ha 5 rose, quante rose usa in tutto?", options: ["35", "30", "40", "25"], correct: 0 },
+      { text: "Anna ha 50€. Compra un libro da 18€ e un quaderno da 5€. Quanti euro le rimangono?", options: ["25€", "32€", "27€", "20€"], correct: 2 }
     ],
     3: [
-      { text: "Un quadrato ha il lato lungo 9 cm. Qual è la sua Area?", options: ["36 cm²", "81 cm²", "18 cm²", "72 cm²"], correct: 1 },
-      { text: "Un negoziante compra 10 maglie a 15€ l'una e le rivende a 22€ l'una. Qual è il guadagno totale?", options: ["70€", "150€", "220€", "50€"], correct: 0 },
-      { text: "Se una corsa in taxi costa 3€ fissi più 2€ a km, quanto costa un viaggio di 8 km?", options: ["16€", "19€", "21€", "18€"], correct: 1 },
-      { text: "Tre amici dividono equamente un conto di 45€. Aggiungono 6€ di mancia totale. Quanto paga ognuno?", options: ["17€", "15€", "21€", "19€"], correct: 0 }
+      { text: "Un rettangolo ha la base di 10 cm e l'altezza di 4 cm. Qual è il suo perimetro?", options: ["40 cm", "28 cm", "14 cm", "24 cm"], correct: 1 },
+      { text: "In un frutteto ci sono 100 alberi. I 3/5 sono meli. Quanti meli ci sono?", options: ["30", "50", "60", "45"], correct: 2 }
     ],
     4: [
-      { text: "Calcola il valore dell'espressione: (15 - 3) × 4 + 10", options: ["58", "48", "38", "68"], correct: 0 },
-      { text: "Qual è il Minimo Comune Multiplo (m.c.m.) tra 6 e 8?", options: ["48", "12", "24", "18"], correct: 2 },
-      { text: "Un maglione da 80€ è scontato del 25%. Quanto costa ora il maglione?", options: ["60€", "55€", "70€", "65€"], correct: 0 },
-      { text: "La somma di due numeri è 30 e uno è il doppio dell'altro. Qual è il numero più grande?", options: ["15", "20", "25", "10"], correct: 1 }
+      { text: "Un quadrato ha il lato lungo 9 cm. Qual è la sua Area?", options: ["36 cm²", "81 cm²", "18 cm²", "72 cm²"], correct: 1 },
+      { text: "Qual è il Minimo Comune Multiplo (m.c.m.) tra 6 e 8?", options: ["48", "12", "24", "18"], correct: 2 }
     ],
     5: [
-      { text: "In un triangolo rettangolo i cateti misurano 6 cm e 8 cm. Quanto misura l'ipotenusa?", options: ["10 cm", "14 cm", "12 cm", "9 cm"], correct: 0 },
-      { text: "Se 4 operai impiegano 6 ore per un lavoro, quante ore impiegano 8 operai per lo stesso lavoro?", options: ["12 ore", "3 ore", "4 ore", "2 ore"], correct: 1 },
-      { text: "Calcola la media aritmetica dei voti: 7, 8, 6, 9, 10.", options: ["7.5", "8.5", "8.0", "9.0"], correct: 2 },
-      { text: "Un cerchio ha raggio 5 cm. Qual è la sua circonferenza? (usa π = 3.14)", options: ["31.4 cm", "15.7 cm", "78.5 cm", "62.8 cm"], correct: 0 }
+      { text: "Un maglione da 80€ è scontato del 25%. Quanto costa ora il maglione?", options: ["60€", "55€", "70€", "65€"], correct: 0 },
+      { text: "In un triangolo rettangolo i cateti misurano 6 cm e 8 cm. Quanto misura l'ipotenusa?", options: ["10 cm", "14 cm", "12 cm", "9 cm"], correct: 0 }
     ],
     6: [
       { text: "Risolvi l'equazione di 1° grado: 3x + 5 = 20. Qual è il valore di x?", options: ["5", "4", "6", "15"], correct: 0 },
-      { text: "Un cubo ha lo spigolo di 4 cm. Qual è il suo volume totale?", options: ["16 cm³", "64 cm³", "32 cm³", "96 cm³"], correct: 1 },
-      { text: "Qual è l'area di un cerchio avente raggio di 10 cm? (usa π = 3.14)", options: ["314 cm²", "62.8 cm²", "100 cm²", "31.4 cm²"], correct: 0 },
-      { text: "Lanciando due dadi a 6 facce, qual è la probabilità che la somma sia 12?", options: ["1/36", "1/12", "1/6", "2/36"], correct: 0 }
+      { text: "Qual è l'area di un cerchio avente raggio di 10 cm? (usa π = 3.14)", options: ["314 cm²", "62.8 cm²", "100 cm²", "31.4 cm²"], correct: 0 }
     ]
   };
-  const GRADE_LABELS = { 1: "🎒 Problema: 3ª Elementare", 2: "🎒 Problema: 4ª Elementare", 3: "🎒 Problema: 5ª Elementare", 4: "📐 Problema: 1ª Media", 5: "📐 Problema: 2ª Media", 6: "📐 Problema: 3ª Media" };
+  
+  const GRADE_LABELS = { 
+    1: "🎒 Sfida: 2ª-3ª Elementare", 
+    2: "🎒 Problema: 4ª Elementare", 
+    3: "🎒 Problema: 5ª Elementare", 
+    4: "📐 Problema: Scuola Media", 
+    5: "⚡ Problema: 1ª-3ª Superiore", 
+    6: "⚡ Problema: 4ª-5ª Superiore" 
+  };
+  
   function triggerProblemGame() {
-    const lvlKey = Math.min(state.level, 6);
+    document.getElementById('problemFeedback').textContent = "";
+    document.getElementById('problemCloseBtn').style.display = 'none';
+
+    if (state.ageTier === 'kids') {
+      const visualTypes = ['memory', 'maze', 'color'];
+      const chosenVisual = visualTypes[Math.floor(Math.random() * visualTypes.length)];
+      if (chosenVisual === 'memory') setupMemoryVisual();
+      else if (chosenVisual === 'maze') setupMazeVisual();
+      else setupColorVisual();
+      document.getElementById('problemModal').style.display = 'flex';
+      return;
+    }
+
+    const lvlKey = getLvlKeyByAge();
     const problems = PROBLEMS_DATABASE[lvlKey];
     const problem = problems[Math.floor(Math.random() * problems.length)];
     document.getElementById('problemTitle').textContent = `📚 Sfida Enigmatica del Regno`;
     document.getElementById('problemGradeTag').textContent = GRADE_LABELS[lvlKey];
-    document.getElementById('problemQuestionText').textContent = problem.text;
+    
+    document.getElementById('problemContentArea').innerHTML = `
+      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;">${problem.text}</p>
+      <div class="miniGridChoice" id="problemOptionsGrid"></div>
+    `;
     const grid = document.getElementById('problemOptionsGrid');
-    grid.innerHTML = "";
     problem.options.forEach((optText, idx) => {
       const btn = document.createElement('button');
       btn.className = 'optBtn';
@@ -751,10 +859,201 @@
       btn.onclick = () => checkProblemAnswer(idx, problem.correct, problem.options[problem.correct]);
       grid.appendChild(btn);
     });
-    document.getElementById('problemFeedback').textContent = "";
-    document.getElementById('problemCloseBtn').style.display = 'none';
     document.getElementById('problemModal').style.display = 'flex';
   }
+
+  /* MINIGIOCHI VISIVI PER FASCIA PICCOLI (DINAMICI ED EVOLUTIVI) */
+
+  // MEMORY: FIGURE UGUALI, SIMBOLI CASUALI E NUMERO DI CASELLE PROGRESSIVO
+  function setupMemoryVisual() {
+    document.getElementById('problemTitle').textContent = `🃏 Gioco di Memoria! (Livello ${state.level})`;
+    
+    // Calcolo dinamico delle coppie in base al livello di gioco
+    let numPairs = 4; // Lvl 1: 4 coppie (8 carte)
+    if (state.level >= 4) numPairs = 8;      // Lvl 4+: 8 coppie (16 carte)
+    else if (state.level >= 2) numPairs = 6; // Lvl 2-3: 6 coppie (12 carte)
+
+    document.getElementById('problemGradeTag').textContent = `Trova le ${numPairs} coppie uguali! (${numPairs * 2} carte)`;
+    
+    const emojiPool = ['🐶', '🐱', '🐰', '🐮', '🦊', '🐸', '🦁', '🐯', '🐻', '🐼', '🐨', '🐵', '🦄', '🐝', '🐞', '🎨', '🚀', '⭐', '🍎', '⚽', '🍦', '🚗', '🎈', '👑'];
+    const chosen = emojiPool.sort(() => Math.random() - 0.5).slice(0, numPairs);
+    let cards = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
+    
+    memoryState = { cards, flipped: [], matched: 0, totalPairs: numPairs };
+    
+    const cols = numPairs === 4 ? 4 : (numPairs === 6 ? 4 : 4);
+    let html = `<div class="memoryGrid" style="grid-template-columns: repeat(${cols}, 1fr);">`;
+    cards.forEach((c, idx) => {
+      html += `<div class="memoryCard" id="mcard-${idx}" onclick="handleMemoryClick(${idx})">❓</div>`;
+    });
+    html += `</div>`;
+    document.getElementById('problemContentArea').innerHTML = html;
+  }
+
+  function handleMemoryClick(idx) {
+    if (memoryState.flipped.length >= 2) return;
+    const cardEl = document.getElementById(`mcard-${idx}`);
+    if (cardEl.classList.contains('flipped')) return;
+
+    cardEl.textContent = memoryState.cards[idx];
+    cardEl.classList.add('flipped');
+    memoryState.flipped.push({ idx, symbol: memoryState.cards[idx] });
+
+    if (memoryState.flipped.length === 2) {
+      const [c1, c2] = memoryState.flipped;
+      if (c1.symbol === c2.symbol) {
+        memoryState.matched++;
+        memoryState.flipped = [];
+        if (memoryState.matched === memoryState.totalPairs) {
+          finishVisualGame(`🎉 Bravissimo! Hai trovato tutte le ${memoryState.totalPairs} coppie uguali! +30 Monete!`);
+        }
+      } else {
+        setTimeout(() => {
+          const card1 = document.getElementById(`mcard-${c1.idx}`);
+          const card2 = document.getElementById(`mcard-${c2.idx}`);
+          if (card1) { card1.textContent = '❓'; card1.classList.remove('flipped'); }
+          if (card2) { card2.textContent = '❓'; card2.classList.remove('flipped'); }
+          memoryState.flipped = [];
+        }, 700);
+      }
+    }
+  }
+
+  // LABIRINTO: DIVERSI LAYOUT CASUALI OGNI VOLTA
+  const MAZE_LAYOUTS = [
+    {
+      grid: [
+        [0, 0, 1, 1, 1],
+        [1, 0, 0, 0, 1],
+        [1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0],
+        [1, 1, 1, 1, 2]
+      ], start: {r:0, c:0}
+    },
+    {
+      grid: [
+        [0, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1],
+        [1, 1, 0, 0, 0],
+        [1, 0, 0, 1, 0],
+        [1, 1, 1, 1, 2]
+      ], start: {r:0, c:0}
+    },
+    {
+      grid: [
+        [1, 1, 1, 1, 2],
+        [1, 0, 0, 0, 0],
+        [1, 0, 1, 1, 0],
+        [0, 0, 1, 1, 0],
+        [0, 1, 1, 1, 1]
+      ], start: {r:3, c:0}
+    }
+  ];
+
+  function setupMazeVisual() {
+    document.getElementById('problemTitle').textContent = `🌀 Labirinto dell'Eroe!`;
+    document.getElementById('problemGradeTag').textContent = `Trova la via di fuga verso la bandiera 🏁!`;
+    const layout = MAZE_LAYOUTS[Math.floor(Math.random() * MAZE_LAYOUTS.length)];
+    mazeState.grid = layout.grid;
+    mazeState.pos = { ...layout.start };
+    renderMazeUI();
+  }
+
+  function renderMazeUI() {
+    const gridData = mazeState.grid;
+    let html = `<div class="mazeGrid">`;
+    for(let r=0; r<5; r++) {
+      for(let c=0; c<5; c++) {
+        let cellContent = "";
+        if (mazeState.pos.r === r && mazeState.pos.c === c) cellContent = state.gender === 'cavaliere' ? '⚔️' : '👸';
+        else if (gridData[r][c] === 2) cellContent = '🏁';
+        
+        let typeClass = gridData[r][c] === 1 ? 'mazeWall' : 'mazePath';
+        html += `<div class="mazeCell ${typeClass}">${cellContent}</div>`;
+      }
+    }
+    html += `</div>`;
+    html += `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:10px;">
+        <button onclick="moveMaze(-1,0)">⬆️</button>
+        <div style="display:flex; gap:16px;">
+          <button onclick="moveMaze(0,-1)">⬅️</button>
+          <button onclick="moveMaze(0,1)">➡️</button>
+        </div>
+        <button onclick="moveMaze(1,0)">⬇️</button>
+      </div>
+    `;
+    document.getElementById('problemContentArea').innerHTML = html;
+  }
+
+  function moveMaze(dr, dc) {
+    const gridData = mazeState.grid;
+    let nr = mazeState.pos.r + dr;
+    let nc = mazeState.pos.c + dc;
+    if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5 && gridData[nr][nc] !== 1) {
+      mazeState.pos = { r: nr, c: nc };
+      renderMazeUI();
+      if (gridData[nr][nc] === 2) {
+        finishVisualGame("🎉 Fantastico! Sei uscito dal labirinto! +30 Monete!");
+      }
+    }
+  }
+
+  // COLORAZIONE VISIVA
+  function setupColorVisual() {
+    document.getElementById('problemTitle').textContent = `🎨 Colora con i Numeri!`;
+    document.getElementById('problemGradeTag').textContent = `Scegli il colore in alto e tocca la figura corrispondente!`;
+    colorState = { activeColor: 1, filled: { 1: false, 2: false, 3: false, 4: false } };
+    
+    let html = `
+      <div class="colorPalette">
+        <button class="colorBtn selected" style="background:#fde047;" onclick="selectColor(1, this)">1</button>
+        <button class="colorBtn" style="background:#f472b6;" onclick="selectColor(2, this)">2</button>
+        <button class="colorBtn" style="background:#38bdf8;" onclick="selectColor(3, this)">3</button>
+        <button class="colorBtn" style="background:#4ade80;" onclick="selectColor(4, this)">4</button>
+      </div>
+      <svg viewBox="0 0 200 160" style="width:220px; height:auto; margin:0 auto; display:block;">
+        <circle id="csec-1" class="colorRegion" cx="60" cy="80" r="35" fill="#334155" onclick="colorSector(1)"/>
+        <text x="60" y="85" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">1</text>
+        
+        <circle id="csec-2" class="colorRegion" cx="140" cy="80" r="35" fill="#334155" onclick="colorSector(2)"/>
+        <text x="140" y="85" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">2</text>
+        
+        <rect id="csec-3" class="colorRegion" x="80" y="20" width="40" height="40" rx="8" fill="#334155" onclick="colorSector(3)"/>
+        <text x="100" y="45" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">3</text>
+        
+        <rect id="csec-4" class="colorRegion" x="80" y="100" width="40" height="40" rx="8" fill="#334155" onclick="colorSector(4)"/>
+        <text x="100" y="125" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">4</text>
+      </svg>
+    `;
+    document.getElementById('problemContentArea').innerHTML = html;
+  }
+
+  function selectColor(cNum, btn) {
+    colorState.activeColor = cNum;
+    document.querySelectorAll('.colorBtn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function colorSector(sNum) {
+    const palette = { 1: "#fde047", 2: "#f472b6", 3: "#38bdf8", 4: "#4ade80" };
+    if (colorState.activeColor === sNum) {
+      document.getElementById(`csec-${sNum}`).setAttribute('fill', palette[sNum]);
+      colorState.filled[sNum] = true;
+      if (Object.values(colorState.filled).every(v => v === true)) {
+        finishVisualGame("🎨 Che capolavoro! Disegno colorato alla perfezione! +30 Monete!");
+      }
+    }
+  }
+
+  function finishVisualGame(msg) {
+    playSound('correct'); triggerConfetti();
+    state.coins += 30; state.score += 40; updateHeader();
+    const fb = document.getElementById('problemFeedback');
+    fb.textContent = msg; fb.style.color = "#22c55e";
+    document.getElementById('problemCloseBtn').style.display = 'block';
+  }
+
   function checkProblemAnswer(chosen, correct, correctText) {
     const optionsButtons = document.querySelectorAll('#problemOptionsGrid button');
     optionsButtons.forEach(btn => btn.disabled = true);
@@ -802,11 +1101,6 @@
         title: "Il Bosco Incantato",
         cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14">🍄</text></svg>`,
         cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14" onclick="skillWin(30, 'Hai trovato il fiore tra gli alberi!')" style="cursor:pointer;">🌸</text></svg>`
-      },
-      {
-        title: "Stalla delle Cavalcature",
-        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#fef08a"/><text x="15" y="55" font-size="22">🚜</text><text x="50" y="55" font-size="18">🐮</text><text x="75" y="55" font-size="18">🐥</text></svg>`,
-        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#fef08a"/><text x="15" y="55" font-size="22">🚜</text><text x="50" y="55" font-size="18" onclick="skillWin(30, 'Hai scovato il maialino stravagante!')" style="cursor:pointer;">🐷</text><text x="75" y="55" font-size="18">🐥</text></svg>`
       }
     ];
     const currentTheme = themes[(state.level - 1) % themes.length];
@@ -822,7 +1116,7 @@
   }
   function setupTrisGame() {
     document.getElementById('skillTitle').textContent = `❌ TRIS VS AI ⭕ (Livello ${state.level})`;
-    document.getElementById('skillDesc').textContent = `Affronta l'IA del Regno! (Intelligenza potenziata con i livelli)`;
+    document.getElementById('skillDesc').textContent = `Affronta l'IA del Regno!`;
     trisState = { board: Array(9).fill(''), active: true };
     renderTrisGrid();
   }
@@ -866,19 +1160,17 @@
   function getAiMove() {
     const emptyIndices = trisState.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
     if(emptyIndices.length === 0) return -1;
-    if(state.level >= 2) {
-      for(let idx of emptyIndices) {
-        trisState.board[idx] = '⭕';
-        if(checkTrisWin('⭕')) { trisState.board[idx] = ''; return idx; }
-        trisState.board[idx] = '';
-      }
-      for(let idx of emptyIndices) {
-        trisState.board[idx] = '❌';
-        if(checkTrisWin('❌')) { trisState.board[idx] = ''; return idx; }
-        trisState.board[idx] = '';
-      }
+    for(let idx of emptyIndices) {
+      trisState.board[idx] = '⭕';
+      if(checkTrisWin('⭕')) { trisState.board[idx] = ''; return idx; }
+      trisState.board[idx] = '';
     }
-    if(state.level >= 4 && trisState.board[4] === '') { return 4; }
+    for(let idx of emptyIndices) {
+      trisState.board[idx] = '❌';
+      if(checkTrisWin('❌')) { trisState.board[idx] = ''; return idx; }
+      trisState.board[idx] = '';
+    }
+    if(trisState.board[4] === '') return 4;
     return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
   }
   function checkTrisWin(sym) {
@@ -886,15 +1178,12 @@
     return wins.some(w => w.every(idx => trisState.board[idx] === sym));
   }
   function setupRebusGame() {
-    document.getElementById('skillTitle').textContent = `🧩 Risolvi il Rebus! (Livello ${state.level})`;
+    document.getElementById('skillTitle').textContent = `🧩 Risolvi il Rebus!`;
     document.getElementById('skillDesc').textContent = "Decifra l'associazione visiva ed enigmistica!";
     const rebuses = [
       { prompt: "👑 (RE) + 🚌 (BUS)", options: ["REBUS", "ROBOT", "REGALO", "AUTOBUS"], correct: 0 },
       { prompt: "🔤 C + 🐻 (ORSO)", options: ["CARTA", "CORSO", "ORSO", "CASO"], correct: 1 },
-      { prompt: "🔤 S + 🧙‍♂️ (MAGO)", options: ["STREGA", "DRAGO", "SMAGO", "MAGO"], correct: 2 },
-      { prompt: "🔤 F + 🚪 (ANTA)", options: ["FANTA", "PORTA", "FESTA", "FANTASMA"], correct: 0 },
-      { prompt: "🔤 M + 🐂 (TORO)", options: ["MOTORE", "TORO", "MOTO", "RACCHETTA"], correct: 0 },
-      { prompt: "🔤 P + 🍦 (ENNE)", options: ["PANNA", "PENNE", "PASTA", "PANE"], correct: 1 }
+      { prompt: "🔤 S + 🧙‍♂️ (MAGO)", options: ["STREGA", "DRAGO", "SMAGO", "MAGO"], correct: 2 }
     ];
     const currentRebus = rebuses[(state.level - 1) % rebuses.length];
     let html = `<div style="font-size:32px; margin:20px 0; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">${currentRebus.prompt}</div>`;
@@ -910,26 +1199,12 @@
     else { skillFail("Soluzione errata! Allena la tua mente!"); }
   }
   function setupIntrusoGame() {
-    document.getElementById('skillTitle').textContent = `🕵️ Trova l'Intruso! (Livello ${state.level})`;
+    document.getElementById('skillTitle').textContent = `🕵️ Trova l'Intruso!`;
     document.getElementById('skillDesc').textContent = "Identifica l'elemento che non rispetta la regola logica!";
-    let intruderPool = [];
-    if(state.level <= 2) {
-      intruderPool = [
-        { title: "Quale tra questi animali NON vive in mare?", items: ["🐬 Delfino", "🐙 Piovra", "🦁 Leone", "🐳 Balena"], correct: 2 },
-        { title: "Quale tra questi numeri NON è PARI?", items: ["4", "8", "12", "9"], correct: 3 }
-      ];
-    } else if(state.level <= 4) {
-      const mult = Math.min(state.level + 2, 7);
-      intruderPool = [
-        { title: `Trova il numero che NON appartiene alla tabellina del ${mult}!`, items: [`${mult*2}`, `${mult*4}`, `${mult*3 + 1}`, `${mult*5}`], correct: 2 },
-        { title: "Quale simbolo NON è un'arma da Cavaliere?", items: ["⚔️ Spada", "🛡️ Scudo", "🏹 Arco", "🎨 Tavolozza"], correct: 3 }
-      ];
-    } else {
-      intruderPool = [
-        { title: "Quale operazione NON dà come risultato 24?", items: ["6 × 4", "3 × 8", "12 × 2", "5 × 5"], correct: 3 },
-        { title: "Quale tra questi valori NON è un numero PRIMO?", items: ["7", "11", "15", "13"], correct: 2 }
-      ];
-    }
+    let intruderPool = [
+      { title: "Quale tra questi numeri NON è PARI?", items: ["4", "8", "12", "9"], correct: 3 },
+      { title: "Quale tra questi valori NON è un numero PRIMO?", items: ["7", "11", "15", "13"], correct: 2 }
+    ];
     const current = intruderPool[Math.floor(Math.random() * intruderPool.length)];
     let html = `<div style="font-size:16px; font-weight:bold; margin-bottom:12px;">${current.title}</div>`;
     html += `<div class="miniGridChoice">`;
@@ -999,6 +1274,7 @@
     document.getElementById('gameOverModal').style.display = 'none';
     if (changeHero) {
       document.getElementById('charNameInput').value = state.heroName;
+      document.getElementById('charAgeInput').value = state.heroAge;
       document.getElementById('initModal').style.display = 'flex';
     } else {
       updateHeader(); renderKingdomMap(); renderRound();
