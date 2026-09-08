@@ -177,6 +177,7 @@
       </div>
       <div class="pill">Livello <b id="hdrLevel">1</b></div>
       <div class="pill">Tappa <b id="hdrStep">1/20</b></div>
+      <div class="pill">Vite <b id="hdrLives">❤️❤️❤️❤️❤️</b></div>
       <div class="pill">Monete <b id="hdrCoins">0€</b></div>
       <div class="musbox">
         <button onclick="musicVol(-0.1)" title="Abbassa il volume">🔉−</button>
@@ -311,12 +312,15 @@ const SHOP = {
 };
 
 /* ---------- stato ---------- */
-let G = { nome:'Eroe', eta:8, gender:'principe', fascia:0, level:1, step:0, coins:0, inventory:[], equipped:{} };
+let G = { nome:'Eroe', eta:8, gender:'principe', fascia:0, level:1, step:0, coins:0, lives:5, inventory:[], equipped:{} };
 const usedSets = {};
 function used(f){ if(!usedSets[f]) usedSets[f] = new Set(); return usedSets[f]; }
 
 function save(){ try { localStorage.setItem('regno_incantato', JSON.stringify(G)); } catch(e){} }
-function load(){ try { const s = localStorage.getItem('regno_incantato'); if(s) G = Object.assign(G, JSON.parse(s)); } catch(e){} }
+function load(){
+  try { const s = localStorage.getItem('regno_incantato'); if(s) G = Object.assign(G, JSON.parse(s)); } catch(e){}
+  if(typeof G.lives !== 'number' || G.lives < 1) G.lives = 5;
+}
 
 /* ---------- suoni (WebAudio) ---------- */
 let AC = null;
@@ -421,7 +425,7 @@ function start(){
   G.nome = nome; G.eta = age;
   G.fascia = (sel === 'auto') ? fasciaOf(age) : parseInt(sel);
   if(isNaN(G.fascia)) G.fascia = fasciaOf(age);
-  G.level = 1; G.step = 0; G.coins = 0; G.inventory = []; G.equipped = {};
+  G.level = 1; G.step = 0; G.coins = 0; G.lives = 5; G.inventory = []; G.equipped = {};
   musicStart();
   playSound('win');
   save();
@@ -444,6 +448,7 @@ function renderHeader(){
   el('hdrLevel').textContent = Math.min(G.level, 10);
   el('hdrStep').textContent = (G.step + 1) + '/20';
   el('hdrCoins').textContent = G.coins + '€';
+  el('hdrLives').textContent = '❤️'.repeat(Math.max(0, G.lives)) + '🖤'.repeat(Math.max(0, 5 - G.lives));
   el('mapTheme').textContent = LEVEL_THEMES[Math.min(G.level,10) - 1];
   el('avatarLbl').textContent = G.gender === 'principe' ? '🤴 Il tuo Principe' : '👸 La tua Principessa';
 }
@@ -696,9 +701,12 @@ function pick(i){
     fb.textContent = '✅ Giusto! +3€';
     fb.style.color = '#4ade80';
   } else {
+    G.lives = G.lives - 1;
     playSound('wrong');
-    fb.textContent = '❌ Sbagliato! La risposta era ' + curQ.ans;
+    fb.textContent = '❌ Sbagliato! La risposta era ' + curQ.ans + '  (−1 vita)';
     fb.style.color = '#f87171';
+    save(); renderHeader();
+    if(G.lives <= 0){ gameOver(); return; }
   }
   el('qnext').classList.remove('hidden');
   save(); renderHeader();
@@ -712,6 +720,7 @@ function levelUp(){
   playSound('win');
   G.level = G.level + 1;
   G.step = 0;
+  G.lives = 5;
   save();
   if(G.level > 10){
     el('overlay').classList.remove('hidden');
@@ -730,12 +739,27 @@ function levelUp(){
 }
 function victoryReset(){
   el('overlay').classList.add('hidden');
-  G.level = 1; G.step = 0; G.coins = 0; G.inventory = []; G.equipped = {};
+  G.level = 1; G.step = 0; G.coins = 0; G.lives = 5; G.inventory = []; G.equipped = {};
   save(); renderHeader(); renderAvatar(); renderNode();
 }
 function closeOverlayAndContinue(){
   el('overlay').classList.add('hidden');
   renderHeader(); renderAvatar(); renderNode();
+}
+function gameOver(){
+  playSound('wrong');
+  el('overlay').classList.remove('hidden');
+  el('overlayBody').innerHTML =
+    '<h2>💔 GAME OVER!</h2>' +
+    '<p>Hai esaurito le <b>5 vite</b> nella tappa ' + LEVEL_THEMES[Math.min(G.level,10)-1] + '.<br>Non ti preoccupare: puoi riprovare il livello da capo!</p>' +
+    '<button class="btn-big" style="margin-bottom:8px" onclick="retryLevel()">🔁 Riprova il livello</button>' +
+    '<button class="btn-big" style="background:#334155;color:#fff" onclick="resetGame()">🏠 Torna alla home</button>';
+}
+function retryLevel(){
+  el('overlay').classList.add('hidden');
+  G.lives = 5;
+  G.step = 0;
+  save(); renderHeader(); renderAvatar(); renderNode();
 }
 
 /* ---------- GIOCHI ---------- */
