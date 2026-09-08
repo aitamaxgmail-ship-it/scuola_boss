@@ -1,1285 +1,1034 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tabelline Boss - Kingdom Map & Skill Games</title>
-  
-  <!-- Firebase SDK Setup (v10+) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-    const firebaseConfig = {
-      apiKey: "AIzaSyC0-mF_HRAtNlGloPpuDP2yNkQkxItEyKQ",
-      authDomain: "scuolaboss.firebaseapp.com",
-      databaseURL: "https://scuolaboss-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "scuolaboss",
-      storageBucket: "scuolaboss.firebasestorage.app",
-      messagingSenderId: "578702091",
-      appId: "1:578702091:web:46a4d770df6654f1dd700e",
-      measurementId: "G-7L7M6S17N2"
-    };
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
-  <style>
-    :root {
-      --bg1: #0b1329; --bg2: #1c2a4a; --card: rgba(23, 33, 58, 0.9);
-      --text: #f8fafc; --muted: #94a3b8; --btn: #2563eb;
-      --accent: #f59e0b; --danger: #ef4444; --gold: #fbbf24;
-    }
-    body {
-      margin: 0; font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, var(--bg1), var(--bg2));
-      color: var(--text); min-height: 100vh; display: flex;
-      align-items: center; justify-content: center; padding: 6px; box-sizing: border-box;
-    }
-    #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
-    
-    .app {
-      width: min(1200px, 100%); display: flex; flex-direction: column; gap: 8px;
-    }
-    header {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px;
-      padding: 6px 12px; display: flex; align-items: center;
-      justify-content: space-between; gap: 8px; flex-wrap: wrap;
-    }
-    .pillrow { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .pill {
-      background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--muted);
-    }
-    .pill b { color: var(--text); }
-    .card {
-      background: var(--card); border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px; padding: 10px 14px; backdrop-filter: blur(10px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.4); display: flex; flex-direction: column;
-    }
-    .hero-map-row {
-      display: grid; grid-template-columns: 220px 1fr; gap: 10px;
-    }
-    @media (max-width: 768px) { .hero-map-row { grid-template-columns: 1fr; } }
-    
-    .avatar-display {
-      width: 100%; height: 160px; background: radial-gradient(circle, #2d3748 0%, #0f172a 100%);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px;
-      position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden;
-    }
-    .avatar-display svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
-    .map-wrapper {
-      position: relative; width: 100%; height: 160px; border-radius: 10px;
-      background: #2d5a27; border: 2px solid #588157; overflow: hidden;
-      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
-    }
-    .map-svg { width: 100%; height: 100%; }
-    .bigQ { font-size: clamp(26px, 3.5vw, 42px); font-weight: 900; }
-    .progress { height: 8px; width: 100%; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin: 4px 0; }
-    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #3b82f6); transition: width 0.3s; }
-    .controls { display: flex; gap: 8px; margin-top: 6px; }
-    input[type="number"], input[type="text"] {
-      flex: 1; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px; padding: 8px 12px; color: #fff; font-size: 15px; outline: none;
-    }
-    button {
-      cursor: pointer; border: 0; border-radius: 8px; padding: 8px 12px;
-      font-weight: 700; color: #fff; background: var(--btn); transition: transform 0.1s, opacity 0.15s;
-    }
-    button:active { transform: scale(0.96); }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.nextActionBtn { width: 100%; background: linear-gradient(135deg, #22c55e, #16a34a); padding: 10px; }
-    
-    .optionsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
-    .optBtn { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); font-size: 16px; padding: 8px; }
-    
-    .shopContainerGrid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 6px; max-height: 120px; overflow-y: auto; padding-right: 4px;
-    }
-    .shopContainer { height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
-    .shopItem {
-      display: flex; justify-content: space-between; align-items: center;
-      background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.08); font-size: 12px;
-    }
-    .modalOverlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-      display: flex; align-items: center; justify-content: center;
-      padding: 16px; z-index: 1000; backdrop-filter: blur(8px);
-    }
-    .modal {
-      width: min(560px, 100%); background: #0f172a; border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 18px; padding: 22px; text-align: center; max-height: 90vh; overflow-y: auto;
-    }
-    .charSelectGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
-    .charCard {
-      background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 14px; padding: 14px; cursor: pointer;
-    }
-    .charCard.selected { border-color: var(--accent); background: rgba(245,158,11,0.15); }
-    .leaderboardTable {
-      width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; text-align: left;
-    }
-    .leaderboardTable th, .leaderboardTable td {
-      padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .leaderboardTable th { color: var(--gold); }
-    .diffScene { display: flex; flex-direction: column; gap: 10px; align-items: center; }
-    .diffBoxContainer { display: flex; gap: 10px; justify-content: center; width: 100%; }
-    .diffCard {
-      background: #1e293b; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px;
-      padding: 10px; width: 48%; position: relative; cursor: pointer;
-    }
-    .diffCard svg { width: 100%; height: auto; }
-    .trisGrid {
-      display: grid; grid-template-columns: repeat(3, 75px); gap: 8px;
-      justify-content: center; margin: 15px auto;
-    }
-    .trisCell {
-      width: 75px; height: 75px; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 12px; font-size: 36px; font-weight: bold; display: flex;
-      align-items: center; justify-content: center; cursor: pointer; user-select: none;
-    }
-    .trisCell:hover { background: rgba(255,255,255,0.15); }
-    .miniGridChoice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-    .intrusoCard {
-      background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15);
-      border-radius: 12px; padding: 15px; font-size: 16px; cursor: pointer; transition: background 0.2s;
-    }
-    .intrusoCard:hover { background: rgba(255,255,255,0.18); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Il Regno Incantato — Avventura di matematica e giochi</title>
+<style>
+  :root {
+    --bg1:#1e1b4b; --bg2:#312e81; --bg3:#0f172a;
+    --card:rgba(255,255,255,0.06); --line:rgba(255,255,255,0.14);
+    --gold:#fbbf24; --amber:#f59e0b; --green:#22c55e; --red:#ef4444;
+    --tc: clamp(64px, 22vw, 84px);   /* cella tris */
+    --mc: clamp(28px, 9vw, 44px);    /* cella labirinto */
+  }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:system-ui,-apple-system,sans-serif; }
+  html, body { width:100%; }
+  body {
+    min-height:100vh; color:#f8fafc; background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    padding:8px; overflow-x:hidden;
+  }
+  .hidden { display:none !important; }
+  .app { max-width:900px; margin:0 auto; display:flex; flex-direction:column; gap:8px; }
 
-    /* STILI MINIGIOCHI VISIVI EVOLUTIVI (LIVELLO 1) */
-    .memoryGrid { display: grid; gap: 8px; max-width: 360px; margin: 12px auto; }
-    .memoryCard { height: 60px; background: #1e293b; border: 2px solid var(--accent); border-radius: 10px; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: transform 0.2s, background 0.2s; }
-    .memoryCard.flipped { background: #334155; transform: rotateY(180deg); }
-    .mazeGrid { display: grid; grid-template-columns: repeat(5, 45px); gap: 5px; justify-content: center; margin: 12px auto; }
-    .mazeCell { width: 45px; height: 45px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
-    .mazeWall { background: #334155; }
-    .mazePath { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); }
-    .colorPalette { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
-    .colorBtn { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; font-weight: bold; }
-    .colorBtn.selected { border-color: #fff; transform: scale(1.15); }
-    .colorRegion { cursor: pointer; transition: fill 0.2s; stroke: #fff; stroke-width: 1.5; }
-  </style>
+  /* ---------- HOME ---------- */
+  .home { text-align:center; padding:12px 4px; }
+  .home h1 { font-size:clamp(1.5rem,6vw,2rem); color:var(--gold); text-shadow:0 2px 10px rgba(0,0,0,0.5); }
+  .home .sub { color:#c7d2fe; margin:6px 0 14px; font-size:0.9rem; }
+  .hero-picks { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; }
+  .hero-pick {
+    flex:1 1 150px; max-width:210px; min-width:140px; background:var(--card); border:2px solid var(--line);
+    border-radius:16px; padding:8px; cursor:pointer; transition:transform .15s, border-color .15s;
+  }
+  .hero-pick:hover { transform:translateY(-4px); }
+  .hero-pick.sel { border-color:var(--gold); background:rgba(251,191,36,0.10); }
+  .hero-pick svg { width:92px; height:auto; }
+  .hero-pick .nm { font-weight:800; margin-top:2px; }
+  .hero-pick .tg { font-size:0.7rem; color:#c7d2fe; }
+  .home-form { display:flex; flex-direction:column; gap:9px; max-width:400px; margin:0 auto; }
+  .home-form input, .home-form select {
+    padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    background:#0f172a; color:#f8fafc; font-size:1rem; width:100%;
+  }
+  .fascia-box { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px; font-size:0.82rem; color:#e0e7ff; }
+  .fascia-box b { color:var(--gold); }
+  .btn-big {
+    padding:13px; font-size:1.1rem; font-weight:800; border:none; border-radius:14px; cursor:pointer;
+    background:linear-gradient(135deg,#f59e0b,#d97706); color:#1f2937; margin-top:2px; width:100%;
+  }
+  .btn-big:hover { filter:brightness(1.07); }
+
+  /* ---------- HEADER ---------- */
+  .hdr { display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:7px 10px; }
+  .hdr .who { display:flex; align-items:center; gap:7px; }
+  .hdr .who .av { font-size:1.4rem; }
+  .hdr .who b { display:block; font-size:0.9rem; }
+  .hdr .who small { color:#c7d2fe; font-size:0.72rem; }
+  .pill { background:rgba(0,0,0,0.35); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font-size:0.75rem; color:#cbd5e1; white-space:nowrap; }
+  .pill b { color:var(--gold); }
+  .hbtn { border:none; border-radius:9px; padding:6px 10px; cursor:pointer; font-weight:700; font-size:0.8rem; }
+  .musbox { display:flex; align-items:center; gap:3px; }
+  .musbox button { border:none; border-radius:8px; padding:4px 7px; cursor:pointer; background:#1e293b; color:#fff; font-size:0.85rem; }
+
+  /* ---------- LAYOUT GIOCO ---------- */
+  .row { display:grid; grid-template-columns:150px 1fr; gap:8px; }
+  @media (max-width:720px){ .row { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:9px; }
+  .lbl { font-size:0.75rem; color:#c7d2fe; font-weight:700; margin-bottom:4px; }
+
+  .avatar-card { text-align:center; }
+  #avatarBox svg { width:100%; max-width:120px; height:auto; }
+
+  .map-card svg { width:100%; height:auto; display:block; }
+
+  .main { min-height:300px; display:flex; flex-direction:column; gap:8px; }
+  .q-title { font-size:0.75rem; color:#c7d2fe; text-align:center; }
+  .big-q { font-size:clamp(1.6rem,6vw,2.4rem); font-weight:900; text-align:center; color:#fff; padding:6px 0; }
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  @media (max-width:520px){ .opts { grid-template-columns:1fr; } }
+  .opt {
+    padding:13px; font-size:1.15rem; font-weight:800; border-radius:13px; cursor:pointer;
+    background:#1e293b; color:#f8fafc; border:2px solid var(--line);
+  }
+  .opt:hover { background:#334155; }
+  .opt.right { background:#14532d; border-color:var(--green); }
+  .fb { text-align:center; font-weight:800; min-height:1.3em; }
+  .next { padding:11px; font-weight:800; border:none; border-radius:12px; cursor:pointer;
+    background:linear-gradient(135deg,#22c55e,#16a34a); color:#06281a; font-size:1rem; }
+  .game-title { text-align:center; font-size:1.05rem; font-weight:800; color:var(--gold); }
+
+  /* labirinto */
+  .maze-wrap { display:flex; justify-content:center; }
+  .maze { display:grid; gap:3px; padding:6px; background:#0b1329; border-radius:10px; }
+  .mcell { width:var(--mc); height:var(--mc); border-radius:7px; display:flex; align-items:center; justify-content:center;
+    font-size:calc(var(--mc) * 0.5); background:#1e293b; }
+  .mcell.wall { background:#334155; }
+  .dpad { display:grid; grid-template-columns:repeat(3,48px); gap:6px; justify-content:center; }
+  .dpad button { height:44px; font-size:1.15rem; border:none; border-radius:10px; background:#334155; color:#fff; cursor:pointer; }
+
+  /* tris */
+  .tris { display:grid; grid-template-columns:repeat(3,var(--tc)); gap:6px; justify-content:center; padding:6px; }
+  .tris .cell { width:var(--tc); height:var(--tc); background:#1e293b; border:2px solid var(--line); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; font-size:calc(var(--tc)*0.55); font-weight:900; cursor:pointer; }
+
+  /* impiccato */
+  .hang { text-align:center; font-size:clamp(1.4rem,6vw,1.9rem); letter-spacing:5px; font-weight:900; color:#fff; }
+  .hearts { text-align:center; font-size:1.25rem; }
+  .alpha { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; max-width:340px; margin:0 auto; }
+  .alpha button { width:34px; height:34px; border:none; border-radius:8px; background:#334155; color:#fff; font-weight:800; cursor:pointer; }
+  .alpha button.used { background:#0f172a; color:#475569; }
+
+  .prob-q { font-size:1.15rem; text-align:center; line-height:1.45; padding:6px; }
+  .dragon { text-align:center; font-size:3.6rem; line-height:1; }
+
+  /* overlay / modal */
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); display:flex; align-items:center; justify-content:center; z-index:50; padding:14px; }
+  .modal { background:#1e293b; border:1px solid var(--line); border-radius:18px; padding:16px; width:100%; max-width:460px; max-height:88vh; overflow:auto; }
+  .modal h2 { color:var(--gold); text-align:center; margin-bottom:6px; font-size:1.2rem; }
+  .modal p { text-align:center; color:#cbd5e1; margin-bottom:9px; font-size:0.85rem; }
+
+  /* negozio */
+  .shop-item { display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:rgba(0,0,0,0.3); border:1px solid var(--line); border-radius:12px; padding:8px 10px; margin-bottom:8px; }
+  .shop-item .ic { font-size:1.4rem; }
+  .shop-item .nm { font-weight:700; font-size:0.9rem; }
+  .shop-item .pr { font-size:0.75rem; color:var(--gold); }
+  .shop-item button { border:none; border-radius:9px; padding:7px 12px; cursor:pointer; font-weight:800; background:#334155; color:#fff; font-size:0.8rem; }
+  .shop-item button.buy { background:linear-gradient(135deg,#f59e0b,#d97706); color:#1f2937; }
+  .shop-item button.inuse { background:#14532d; color:#bbf7d0; }
+
+  .hint { font-size:0.74rem; color:#94a3b8; text-align:center; }
+</style>
 </head>
 <body>
-  <canvas id="confettiCanvas"></canvas>
-  
-  <div class="modalOverlay" id="initModal">
-    <div class="modal">
-      <h2>👑 Scegli il tuo Eroe!</h2>
-      <p style="color: var(--muted); font-size:14px; margin-bottom:8px;">Inserisci nome ed età per sbloccare la tua sfida:</p>
-      
-      <div style="display:flex; gap:8px; width:90%; margin:0 auto 12px auto;">
-        <input type="text" id="charNameInput" placeholder="Nome Eroe" style="flex:2;" />
-        <input type="number" id="charAgeInput" placeholder="Età" min="1" max="99" style="flex:1;" />
-      </div>
+<div class="app">
 
-      <div class="charSelectGrid">
-        <div class="charCard selected" id="cardCavaliere" onclick="setGender('cavaliere')">
-          <div style="font-size:45px;">⚔️</div>
-          <b>Cavaliere Uomo</b>
-          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Salva la Principessa!</div>
-        </div>
-        <div class="charCard" id="cardPrincipessa" onclick="setGender('principessa')">
-          <div style="font-size:45px;">👸</div>
-          <b>Principessa Donna</b>
-          <div style="font-size:11px; color:var(--muted); margin-top:4px;">Salva il Principe!</div>
-        </div>
+  <!-- ================= HOME ================= -->
+  <div id="screenHome" class="home">
+    <h1>🏰 Il Regno Incantato</h1>
+    <p class="sub">Rispondi alle domande, supera i 5 giochi e porta il tuo eroe fino al castello!<br>Ogni risposta giusta vale <b>3€</b> per il Negozio del Regno.</p>
+
+    <div class="hero-picks">
+      <div class="hero-pick sel" id="pickPrincipe" onclick="selGender('principe')">
+        <div id="previewPrincipe"></div>
+        <div class="nm">🤴 Principe</div>
+        <div class="tg">Salva la Principessa!</div>
       </div>
-      <button style="width:100%; padding:12px;" onclick="startGame()">Inizia l'Avventura ➔</button>
+      <div class="hero-pick" id="pickPrincipessa" onclick="selGender('principessa')">
+        <div id="previewPrincipessa"></div>
+        <div class="nm">👸 Principessa</div>
+        <div class="tg">Salva il Principe!</div>
+      </div>
+    </div>
+
+    <div class="home-form">
+      <input id="inNome" placeholder="Il tuo nome (es. Luca)" maxlength="16">
+      <input id="inEta" type="number" placeholder="La tua età (es. 8)" min="3" max="99" oninput="updFascia()">
+      <select id="inFascia" onchange="updFascia()">
+        <option value="auto" selected>Fascia automatica (dall'età)</option>
+        <option value="0">1ª–3ª Elementare (fino a 10 anni)</option>
+        <option value="1">Scuola Media (11–13 anni)</option>
+        <option value="2">1ª Superiore (14–15 anni)</option>
+        <option value="3">3ª Superiore (16–17 anni)</option>
+        <option value="4">Adulti (18+)</option>
+      </select>
+      <div class="fascia-box" id="fasciaBox">Inserisci l'età per vedere la tua fascia.</div>
+      <button class="btn-big" onclick="start()">Inizia l'avventura ➔</button>
     </div>
   </div>
 
-  <div class="modalOverlay" id="multiModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color: var(--gold);" id="multiTitle">🎓 Domanda di Cultura</h2>
-      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="multiGradeTag">Materia & Livello</div>
-      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="multiQuestionText">...</p>
-      
-      <div class="miniGridChoice" id="multiOptionsGrid"></div>
-      <div id="multiFeedback" style="margin-top:12px; font-weight:bold;"></div>
-      <button id="multiCloseBtn" style="width:100%; margin-top:14px; display:none;" onclick="closeMultiModal()">Continua il Cammino ➔</button>
-    </div>
-  </div>
-
-  <div class="modalOverlay" id="problemModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color: var(--gold);" id="problemTitle">📚 Problema del Regno</h2>
-      <div style="font-size: 12px; color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="problemGradeTag">Livello Scuola</div>
-      <div id="problemContentArea">
-        <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;" id="problemQuestionText">...</p>
-        <div class="miniGridChoice" id="problemOptionsGrid"></div>
+  <!-- ================= GIOCO ================= -->
+  <div id="screenGame" class="hidden">
+    <div class="hdr">
+      <div class="who">
+        <span class="av" id="hdrAv">🤴</span>
+        <div><b id="hdrName">Eroe</b><small id="hdrFascia">Fascia</small></div>
       </div>
-      <div id="problemFeedback" style="margin-top:12px; font-weight:bold;"></div>
-      <button id="problemCloseBtn" style="width:100%; margin-top:14px; display:none;" onclick="closeProblemModal()">Continua il Cammino ➔</button>
-    </div>
-  </div>
-
-  <div class="modalOverlay" id="skillModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color: var(--gold);" id="skillTitle">🎯 Minigioco di Abilità</h2>
-      <p style="color:var(--muted); font-size:14px;" id="skillDesc">Dimostra le tue capacità per sbloccare la ricompensa!</p>
-      
-      <div id="skillContent"></div>
-      <div id="skillFeedback" style="margin-top:10px; font-weight:bold;"></div>
-      <button id="skillCloseBtn" style="width:100%; margin-top:12px; display:none;" onclick="closeSkillModal()">Continua il Cammino ➔</button>
-    </div>
-  </div>
-
-  <div class="modalOverlay" id="levelUpModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color:var(--gold);">🎉 LIVELLO SUPERATO!</h2>
-      <div style="font-size:55px; margin:10px 0;" id="levelUpMascot">🏰</div>
-      <p id="levelUpText" style="font-size:15px; line-height:1.4;"></p>
-      <button style="width:100%; margin-top:12px;" onclick="openShopModal()">Apri il Negozio 🛒</button>
-    </div>
-  </div>
-
-  <div class="modalOverlay" id="shopModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color:var(--gold);">🛒 Negozio del Regno</h2>
-      <p style="color:var(--muted); font-size:13px;">Acquista ed equipaggia i tuoi oggetti prima del prossimo livello!</p>
-      <div class="shopContainer" id="modalShopList"></div>
-      <button style="width:100%; margin-top:16px; background: linear-gradient(135deg, #22c55e, #16a34a);" onclick="startNextLevelFromShop()">Inizia Prossimo Livello ➔</button>
-    </div>
-  </div>
-
-  <div class="modalOverlay" id="gameOverModal" style="display:none;">
-    <div class="modal">
-      <h2 style="color:var(--danger);">💀 Game Over!</h2>
-      <p>Hai esaurito le tue vite lungo il percorso!</p>
-      
-      <h3 style="color: var(--gold); margin-top:15px;">🏆 Classifica Migliori Punteggi</h3>
-      <table class="leaderboardTable">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Eroe</th>
-            <th>Livello</th>
-            <th>Punti</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboardBody"></tbody>
-      </table>
-      
-      <div style="display:flex; gap:10px; margin-top:16px;">
-        <button style="flex:1; background: var(--btn);" onclick="resetFullGame(false)">Continua 🔄</button>
-        <button style="flex:1; background: var(--accent);" onclick="resetFullGame(true)">Cambia Nome / Eroe 👑</button>
+      <div class="pill">Livello <b id="hdrLevel">1</b></div>
+      <div class="pill">Tappa <b id="hdrStep">1/20</b></div>
+      <div class="pill">Monete <b id="hdrCoins">0€</b></div>
+      <div class="musbox">
+        <button onclick="musicVol(-0.1)" title="Abbassa il volume">🔉−</button>
+        <button id="musicToggleBtn" onclick="musicToggle()" title="Musica on/off">🔊</button>
+        <button onclick="musicVol(0.1)" title="Alza il volume">🔊+</button>
       </div>
-    </div>
-  </div>
-
-  <div class="app">
-    <header>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="font-size:22px;">🏰</span>
-        <div>
-          <b id="heroNameDisplay" style="font-size:15px;">Eroe</b>
-          <div style="font-size:10px; color:var(--muted);" id="heroTitleDisplay">Cavaliere</div>
-        </div>
-      </div>
-      <div class="pillrow">
-        <div class="pill">Vite <span id="livesDisplay">❤️❤️❤️❤️❤️</span></div>
-        <div class="pill">Fascia <b id="pillTier" style="color:var(--accent);">--</b></div>
-        <div class="pill">Livello <b id="pillLevel">1</b></div>
-        <div class="pill">Step <b id="pillStep">1/20</b></div>
-        <div class="pill">Monete 🪙 <b id="pillCoins">0</b></div>
-        <div class="pill">Punti ⭐ <b id="pillScore">0</b></div>
-      </div>
-    </header>
-
-    <main class="card">
-      <div>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-size:12px; color:var(--muted);">Sfida delle Tabelline</span>
-          <span style="font-size:12px; color:var(--muted);">Tempo: <b id="timerText" style="color:#fff; font-size:14px;">--</b></span>
-        </div>
-        <div class="progress"><div class="bar" id="progressBar"></div></div>
-        
-        <div style="text-align:center; padding: 10px 0;">
-          <div class="bigQ" id="questionText">...</div>
-        </div>
-        <div class="controls" id="inputControls">
-          <input id="answerInput" type="number" placeholder="Risultato" />
-          <button id="checkBtn">Conferma</button>
-        </div>
-        <div class="optionsGrid" id="optionsGrid" style="display:none;"></div>
-      </div>
-      <div>
-        <div id="feedback" style="margin:6px 0; padding:6px 10px; border-radius:8px; background:rgba(255,255,255,0.05); min-height:18px; font-weight:600; font-size:13px;"></div>
-        <button class="nextActionBtn" id="nextBtn" disabled>Prossima Domanda ➔</button>
-      </div>
-    </main>
-
-    <div class="hero-map-row">
-      <section class="card" style="padding:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <b style="font-size:12px;">Eroe</b>
-          <span style="font-size:10px; color:var(--muted);" id="equipSummary">Attivo</span>
-        </div>
-        <div class="avatar-display">
-          <div id="avatarSvgBox" style="width:100%; height:100%;"></div>
-        </div>
-      </section>
-
-      <section class="card" style="padding:8px;">
-        <b style="font-size:12px; margin-bottom:4px; display:block;">🗺️ Mappa del Regno</b>
-        <div class="map-wrapper">
-          <svg class="map-svg" viewBox="0 0 350 300" id="kingdomMapSvg">
-            <path d="M 30,280 C 120,280 120,210 200,210 C 280,210 300,130 180,120 C 80,110 90,40 175,40" 
-                  fill="none" stroke="#d4a373" stroke-width="28" stroke-linecap="round" />
-            <path d="M 30,280 C 120,280 120,210 200,210 C 280,210 300,130 180,120 C 80,110 90,40 175,40" 
-                  fill="none" stroke="#e9c46a" stroke-width="20" stroke-linecap="round" stroke-dasharray="6,6" />
-            <circle cx="50" cy="180" r="14" fill="#1b4332"/>
-            <circle cx="280" cy="260" r="18" fill="#1b4332"/>
-            <circle cx="310" cy="70" r="15" fill="#1b4332"/>
-            <circle cx="40" cy="60" r="12" fill="#1b4332"/>
-            <g transform="translate(145, 0)">
-              <rect x="10" y="15" width="40" height="30" fill="#6c757d"/>
-              <rect x="5" y="5" width="12" height="20" fill="#495057"/>
-              <rect x="43" y="5" width="12" height="20" fill="#495057"/>
-              <polygon points="5,5 11,-5 17,5" fill="#e63946"/>
-              <polygon points="43,5 49,-5 55,5" fill="#e63946"/>
-              <rect x="23" y="25" width="14" height="20" rx="7" fill="#212529"/>
-              <text x="30" y="-8" font-size="18" text-anchor="middle" id="mapTargetEmoji">👸</text>
-            </g>
-            <g id="playerToken" transform="translate(30,280)">
-              <circle cx="0" cy="0" r="14" fill="#f59e0b" stroke="#fff" stroke-width="2"/>
-              <text x="0" y="5" font-size="14" text-anchor="middle" id="playerTokenEmoji">⚔️</text>
-            </g>
-          </svg>
-        </div>
-      </section>
+      <button class="hbtn" style="background:#334155;color:#fff" onclick="resetGame()">🔄</button>
+      <button class="hbtn" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#1f2937" onclick="openShop()">🛍️ Negozio</button>
     </div>
 
-    <section class="card" style="padding:8px 12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-        <b style="font-size:13px;">🛒 Negozio & Gadget</b>
-        <span style="font-size:10px; color:var(--muted);">Equipaggiamento rapido</span>
+    <div class="row">
+      <div class="card avatar-card">
+        <div class="lbl" id="avatarLbl">Il tuo eroe</div>
+        <div id="avatarBox"></div>
+        <div class="hint" id="equipHint">Parti spoglio: compra oggetti nel Negozio!</div>
       </div>
-      <div class="shopContainerGrid" id="sideShopList"></div>
-    </section>
+      <div class="card map-card">
+        <div class="lbl">🗺️ Mappa del Regno — tappa: <span id="mapTheme" style="color:var(--gold)">Villaggio</span></div>
+        <svg viewBox="0 0 420 200" id="mapSvg"></svg>
+      </div>
+    </div>
+
+    <div class="card main" id="mainPanel"></div>
   </div>
+
+  <!-- ================= OVERLAY ================= -->
+  <div class="overlay hidden" id="overlay">
+    <div class="modal" id="overlayBody"></div>
+  </div>
+</div>
 
 <script>
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  function playSound(type) {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const now = audioCtx.currentTime;
-    if (type === 'correct') {
-      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now + idx * 0.07);
-        gain.gain.setValueAtTime(0.1, now + idx * 0.07); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.12);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(now + idx * 0.07); osc.stop(now + idx * 0.07 + 0.12);
-      });
-    } else if (type === 'trash') {
-      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(160, now);
-      osc.frequency.linearRampToValueAtTime(40, now + 0.3);
-      gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(now); osc.stop(now + 0.3);
+/* ============================================================
+   IL REGNO INCANTATO — v2
+   ============================================================ */
+
+/* ---------- costanti ---------- */
+const FASCE = [
+  { label:'1ª–3ª Elementare', desc:'Tabelline 2–10, addizioni e sottrazioni facili' },
+  { label:'Scuola Media',      desc:'Tabelline fino a 12, divisioni, potenze' },
+  { label:'1ª Superiore',      desc:'Moltiplicazioni a 2 cifre, percentuali, equazioni' },
+  { label:'3ª Superiore',      desc:'Equazioni, radici, frazioni, percentuali' },
+  { label:'Adulti',            desc:'Equazioni 1°–2° grado, sistemi, potenze, radici' }
+];
+const LEVEL_THEMES = ['Villaggio','Bosco','Fiume','Collina','Grotta','Torre','Lago incantato','Deserto','Vulcano','Castello'];
+const GAME_ORDER = ['labirinto','tris','impiccato','problema','drago'];
+const GAME_BONUS = { labirinto:10, tris:10, impiccato:15, problema:15, drago:20 };
+const GAME_NAME  = { labirinto:'🏰 Labirinto', tris:'⭕ Tris', impiccato:'🔤 Parola magica', problema:'📜 Problema', drago:'🐉 Drago' };
+const nodeTypes = (function(){ const a=[]; for(let b=0;b<5;b++){ a.push('q','q','q','g'); } return a; })();
+
+const WORDS = {
+  0: ['CANE','GATTO','SOLE','LUNA','CASA','MELA','PANE','MARE','STELLA','LIBRO','FIORE','ALBERO','SCUOLA','PIZZA','NAVE','PORTA','PRATO','ROSA','LUCE','FUOCO','MONTE','FIUME','GIOIA','TEMPO'],
+  1: ['MONTAGNA','CASTELLO','CAVALIERE','FARFALLA','TESORO','NUVOLA','FINESTRA','GIARDINO','OROLOGIO','BOTTIGLIA','LANTERNA','VULCANO','GALASSIA','PIANETA','CAMPANA','DRAGO','SPADA','REGINA','PRINCIPE','FANTASMA'],
+  2: ['MERAVIGLIA','ARCOBALENO','STRATEGIA','BIBLIOTECA','ASTRONOMIA','MAGNETISMO','GEOMETRIA','EQUAZIONE','FRAZIONE','PERCENTUALE','PROBABILITA','DIAMANTE','ISOSCELE','PARALLELA'],
+  3: ['COSMOLOGIA','IPOTENUSA','FOTOSINTESI','TERMODINAMICA','CINEMATICA','ELLISSE','LOGARITMO','TRIGONOMETRIA','PERIMETRO','EQUILATERO','MAGNETISMO','CIRCONFERENZA'],
+  4: ['METAFISICA','GIURISPRUDENZA','PSEUDOSCIENZA','ETEROGENEO','OSSIMORO','ANTROPOLOGIA','EPISTEMOLOGIA','CIRCONLOCUZIONE','ONOMATOPEA','PARADOSSO']
+};
+
+const PROBLEMS = {
+  0: [
+    { q:'Quanto fa 7 + 5?', opts:['12','11','13','10'], a:0 },
+    { q:'Quanto fa 15 − 6?', opts:['9','8','10','7'], a:0 },
+    { q:'Quanto fa 3 × 4?', opts:['12','7','10','14'], a:0 },
+    { q:"Qual è il plurale di 'casa'?", opts:['Case','Casi','Casa','Casse'], a:0 },
+    { q:"Qual è il contrario di 'grande'?", opts:['Piccolo','Alto','Lungo','Largo'], a:0 },
+    { q:'Quante gambe ha un gatto?', opts:['4','2','3','6'], a:0 },
+    { q:'Quanti giorni ha una settimana?', opts:['7','5','6','10'], a:0 },
+    { q:'Come si scrive il numero 8?', opts:['Otto','Oto','Ottu','Otti'], a:0 }
+  ],
+  1: [
+    { q:'Qual è il m.c.m. tra 6 e 8?', opts:['24','48','12','18'], a:0 },
+    { q:'Quanto fa 12 × 8?', opts:['96','84','104','88'], a:0 },
+    { q:"Qual è il plurale di 'uovo'?", opts:['Uova','Uovi','Uove','Uovu'], a:0 },
+    { q:"Qual è la capitale d'Italia?", opts:['Roma','Milano','Torino','Firenze'], a:0 },
+    { q:'Quanto fa 144 ÷ 12?', opts:['12','10','14','11'], a:0 },
+    { q:"In quale continente si trova l'Italia?", opts:['Europa','Africa','Asia','America'], a:0 },
+    { q:'Quanto fa 9²?', opts:['81','72','90','63'], a:0 },
+    { q:"Qual è il passato remoto di 'io sono'?", opts:['Io fui','Io ero','Io sarò','Io sia'], a:0 }
+  ],
+  2: [
+    { q:'Risolvi: 3x = 27', opts:['9','8','7','6'], a:0 },
+    { q:'Quanto fa il 25% di 80?', opts:['20','25','30','15'], a:0 },
+    { q:'Risolvi: x + 12 = 30', opts:['18','16','20','22'], a:0 },
+    { q:"Che cos'è 'velocemente' nell'analisi grammaticale?", opts:['Avverbio','Aggettivo','Nome','Verbo'], a:0 },
+    { q:'Quanto fa 2⁵?', opts:['32','16','64','24'], a:0 },
+    { q:"Qual è l'area di un rettangolo 6 × 4?", opts:['24','10','20','18'], a:0 },
+    { q:"Nella frase 'Il cane corre', 'Il cane' è…", opts:['Soggetto','Predicato','Complemento','Avverbio'], a:0 },
+    { q:'Quanto fa 15 × 12?', opts:['180','150','160','170'], a:0 }
+  ],
+  3: [
+    { q:'Risolvi: x² = 49', opts:['7','9','6','8'], a:0 },
+    { q:'Quanto fa √144?', opts:['12','14','10','16'], a:0 },
+    { q:'Risolvi: 2x + 6 = 20', opts:['7','6','8','5'], a:0 },
+    { q:'Cateti 3 e 4: quanto misura l\'ipotenusa?', opts:['5','6','7','4'], a:0 },
+    { q:'Quanto fa il 15% di 200?', opts:['30','25','35','20'], a:0 },
+    { q:"Che figura è 'veloce come il vento'?", opts:['Similitudine','Metafora','Iperbole','Onomatopea'], a:0 },
+    { q:'Quanto fa 6³?', opts:['216','108','180','126'], a:0 },
+    { q:"Qual è la formula chimica dell'acqua?", opts:['H₂O','CO₂','O₂','NaCl'], a:0 }
+  ],
+  4: [
+    { q:'Risolvi: x² − 5x + 6 = 0 (soluzione minore)', opts:['2','3','4','1'], a:0 },
+    { q:'Quanto fa √81?', opts:['9','7','8','10'], a:0 },
+    { q:'Quanto fa il 20% di 450?', opts:['90','80','95','85'], a:0 },
+    { q:"In che anno è stata scoperta l'America?", opts:['1492','1500','1450','1512'], a:0 },
+    { q:'Quanto fa 3⁴?', opts:['81','64','27','96'], a:0 },
+    { q:"Qual è la formula dell'area del cerchio?", opts:['π·r²','2·π·r','π·d','π·r'], a:0 }
+  ]
+};
+
+/* ---------- negozio ---------- */
+const SHOP = {
+  principe: [
+    { id:'elmo',    name:'Elmo',           icon:'🪖', slot:'head',     price:8 },
+    { id:'spada',   name:'Spada reale',    icon:'⚔️', slot:'handRight', price:10 },
+    { id:'scudo',   name:'Scudo di ferro', icon:'🛡️', slot:'handLeft',  price:8 },
+    { id:'armatura',name:'Armatura',       icon:'🥋', slot:'body',     price:15, color:'#8fa3b8' },
+    { id:'mantello',name:'Mantello viola', icon:'🧣', slot:'cape',     price:12 },
+    { id:'stivali', name:'Stivali',       icon:'🥾', slot:'feet',     price:7 },
+    { id:'cavallo', name:'Cavallo',       icon:'🐎', slot:'mount',    price:25 },
+    { id:'carrozza',name:'Carrozza',      icon:'🛞', slot:'mount',    price:40 }
+  ],
+  principessa: [
+    { id:'tiara',    name:'Tiara d\'oro',  icon:'👑', slot:'head',     price:8 },
+    { id:'orecchini',name:'Orecchini',     icon:'💎', slot:'ear',      price:10 },
+    { id:'collana',  name:'Collana',       icon:'📿', slot:'neck',     price:10 },
+    { id:'vestito',  name:'Vestito elegante', icon:'👗', slot:'body',  price:15, color:'#c026d3' },
+    { id:'trucco',   name:'Trucco',        icon:'💄', slot:'face',     price:12 },
+    { id:'scarpe',   name:'Scarpe da ballo', icon:'👠', slot:'feet',   price:7 },
+    { id:'cavallob', name:'Cavallo bianco', icon:'🐴', slot:'mount',   price:25 },
+    { id:'carrozzar',name:'Carrozza rosa', icon:'🛞', slot:'mount',    price:40 }
+  ]
+};
+
+/* ---------- stato ---------- */
+let G = { nome:'Eroe', eta:8, gender:'principe', fascia:0, level:1, step:0, coins:0, inventory:[], equipped:{} };
+const usedSets = {};
+function used(f){ if(!usedSets[f]) usedSets[f] = new Set(); return usedSets[f]; }
+
+function save(){ try { localStorage.setItem('regno_incantato', JSON.stringify(G)); } catch(e){} }
+function load(){ try { const s = localStorage.getItem('regno_incantato'); if(s) G = Object.assign(G, JSON.parse(s)); } catch(e){} }
+
+/* ---------- suoni (WebAudio) ---------- */
+let AC = null;
+function audio(){
+  try {
+    if(!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if(AC.state === 'suspended') AC.resume();
+    return AC;
+  } catch(e){ return null; }
+}
+function tone(freq, t0, dur, type, vol){
+  const a = audio(); if(!a) return;
+  try {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'triangle';
+    o.frequency.setValueAtTime(freq, a.currentTime + t0);
+    g.gain.setValueAtTime(vol || 0.12, a.currentTime + t0);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + t0 + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur);
+  } catch(e){}
+}
+function playSound(t){
+  try {
+    if(t === 'correct'){ [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f, i*0.08, 0.28, 'triangle', 0.12)); }
+    else if(t === 'wrong'){ tone(200, 0, 0.3, 'sawtooth', 0.12); tone(130, 0.12, 0.42, 'sawtooth', 0.1); }
+    else if(t === 'coin'){ tone(880, 0, 0.08, 'square', 0.07); tone(1318.5, 0.08, 0.2, 'square', 0.07); }
+    else if(t === 'win'){ [392,523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>tone(f, i*0.1, 0.32, 'triangle', 0.11)); }
+    else if(t === 'buy'){ tone(660, 0, 0.1, 'square', 0.08); tone(990, 0.1, 0.16, 'square', 0.08); }
+    else if(t === 'flip'){ tone(440, 0, 0.06, 'square', 0.06); }
+  } catch(e){}
+}
+
+/* ---------- musichetta di sottofondo ---------- */
+const MUSIC_SEQ = [261.63, 329.63, 392.0, 523.25, 392.0, 329.63, 293.66, 349.23, 261.63, 392.0, 523.25, 659.25];
+let music = { on:false, vol:0.35, idx:0, timer:null };
+function musicTick(){
+  if(!music.on) return;
+  const f = MUSIC_SEQ[music.idx % MUSIC_SEQ.length];
+  tone(f, 0, 0.5, 'sine', music.vol * 0.45);
+  if(music.idx % 3 === 0) tone(f / 2, 0, 0.55, 'sine', music.vol * 0.22);
+  music.idx++;
+  music.timer = setTimeout(musicTick, 300);
+}
+function musicStart(){
+  if(music.on) return;
+  audio();
+  music.on = true; music.idx = 0;
+  musicTick();
+  updateMusicBtn();
+}
+function musicStop(){
+  music.on = false;
+  if(music.timer){ clearTimeout(music.timer); music.timer = null; }
+  updateMusicBtn();
+}
+function musicToggle(){ music.on ? musicStop() : musicStart(); }
+function musicVol(d){
+  music.vol = Math.max(0, Math.min(1, Math.round((music.vol + d) * 100) / 100));
+  try { localStorage.setItem('regno_music_vol', String(music.vol)); } catch(e){}
+  updateMusicBtn();
+}
+function updateMusicBtn(){
+  const b = el('musicToggleBtn');
+  if(b) b.textContent = music.on ? '🔊' : '🔇';
+}
+function musicLoad(){
+  try {
+    const v = parseFloat(localStorage.getItem('regno_music_vol'));
+    if(!isNaN(v)) music.vol = v;
+  } catch(e){}
+}
+
+/* ---------- utilità ---------- */
+function ri(a,b){ return a + Math.floor(Math.random() * (b - a + 1)); }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = ri(0,i); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function el(id){ return document.getElementById(id); }
+
+/* ---------- fascia ---------- */
+function fasciaOf(age){ if(age<=10) return 0; if(age<=13) return 1; if(age<=15) return 2; if(age<=17) return 3; return 4; }
+function updFascia(){
+  const age = parseInt(el('inEta').value);
+  const sel = el('inFascia').value;
+  let f;
+  if(sel === 'auto'){ f = isNaN(age) ? null : fasciaOf(age); }
+  else { f = parseInt(sel); if(isNaN(f)) f = null; }
+  const box = el('fasciaBox');
+  if(f === null || f === undefined || isNaN(f)){ box.innerHTML = 'Inserisci l\'età per vedere la tua fascia.'; return; }
+  box.innerHTML = 'La tua fascia: <b>' + FASCE[f].label + '</b><br>' + FASCE[f].desc;
+}
+
+/* ---------- home ---------- */
+function selGender(g){
+  G.gender = g;
+  el('pickPrincipe').classList.toggle('sel', g === 'principe');
+  el('pickPrincipessa').classList.toggle('sel', g === 'principessa');
+}
+function start(){
+  const nome = (el('inNome').value.trim()) || (G.gender === 'principe' ? 'Principe' : 'Principessa');
+  const age = parseInt(el('inEta').value) || 8;
+  const sel = el('inFascia').value;
+  G.nome = nome; G.eta = age;
+  G.fascia = (sel === 'auto') ? fasciaOf(age) : parseInt(sel);
+  if(isNaN(G.fascia)) G.fascia = fasciaOf(age);
+  G.level = 1; G.step = 0; G.coins = 0; G.inventory = []; G.equipped = {};
+  musicStart();
+  playSound('win');
+  save();
+  el('screenHome').classList.add('hidden');
+  el('screenGame').classList.remove('hidden');
+  renderHeader(); renderAvatar(); renderNode();
+}
+function resetGame(){
+  musicStop();
+  el('screenGame').classList.add('hidden');
+  el('screenHome').classList.remove('hidden');
+  el('overlay').classList.add('hidden');
+}
+
+/* ---------- header / avatar / mappa ---------- */
+function renderHeader(){
+  el('hdrAv').textContent = G.gender === 'principe' ? '🤴' : '👸';
+  el('hdrName').textContent = G.nome + ' (' + G.eta + ' anni)';
+  el('hdrFascia').textContent = FASCE[G.fascia].label;
+  el('hdrLevel').textContent = Math.min(G.level, 10);
+  el('hdrStep').textContent = (G.step + 1) + '/20';
+  el('hdrCoins').textContent = G.coins + '€';
+  el('mapTheme').textContent = LEVEL_THEMES[Math.min(G.level,10) - 1];
+  el('avatarLbl').textContent = G.gender === 'principe' ? '🤴 Il tuo Principe' : '👸 La tua Principessa';
+}
+
+/* ================= AVATAR (disegno morbido) ================= */
+function avatarSVG(gender, eq){
+  eq = eq || {};
+  const isP = gender === 'principessa';
+  const bodyColor = (eq.body && eq.body.color) || (isP ? '#e84393' : '#2f6fed');
+  const skin = 'url(#skinG)';
+  let defs =
+    '<defs>' +
+    '<linearGradient id="skinG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3c4"/><stop offset="1" stop-color="#f4b98b"/></linearGradient>' +
+    '<linearGradient id="hairG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4a1f"/><stop offset="1" stop-color="#4a2a0e"/></linearGradient>' +
+    '<linearGradient id="tunicG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + bodyColor + '"/><stop offset="1" stop-color="' + shade(bodyColor) + '"/></linearGradient>' +
+    '</defs>';
+  let s = '<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">' + defs;
+  s += '<ellipse cx="100" cy="288" rx="48" ry="8" fill="rgba(0,0,0,0.35)"/>';
+
+  if(eq.mount){ s += '<text x="100" y="296" font-size="40" text-anchor="middle">' + eq.mount.icon + '</text>'; }
+
+  if(isP){
+    /* capelli lunghi dietro */
+    s += '<path d="M78,46 C62,78 56,150 62,206 C70,212 74,166 78,118 C82,166 88,212 96,214 C104,212 110,166 114,118 C118,166 124,212 130,206 C136,150 130,78 114,46 C104,34 88,34 78,46 Z" fill="url(#hairG)"/>';
+    /* braccia */
+    s += '<path d="M80,126 C66,142 62,172 66,196 L76,196 C74,170 78,148 88,136 Z" fill="url(#tunicG)"/>';
+    s += '<path d="M120,126 C134,142 138,172 134,196 L124,196 C126,170 122,148 112,136 Z" fill="url(#tunicG)"/>';
+    s += '<circle cx="71" cy="200" r="6.5" fill="' + skin + '"/>';
+    s += '<circle cx="129" cy="200" r="6.5" fill="' + skin + '"/>';
+    /* vestito */
+    s += '<path d="M84,124 C80,164 66,212 42,244 C78,262 122,262 158,244 C134,212 120,164 116,124 Z" fill="url(#tunicG)" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/>';
+    /* corpetto */
+    s += '<path d="M84,124 C86,108 114,108 116,124 C118,152 82,152 84,124 Z" fill="' + shade(bodyColor) + '"/>';
+    s += '<path d="M96,128 L104,128 L104,196 L96,196 Z" fill="rgba(255,255,255,0.18)"/>';
+    /* collo e testa */
+    s += '<rect x="92" y="72" width="16" height="16" rx="7" fill="' + skin + '"/>';
+    s += '<ellipse cx="100" cy="54" rx="22" ry="25" fill="' + skin + '"/>';
+    /* capelli davanti */
+    s += '<path d="M78,50 C74,22 92,14 100,14 C108,14 126,22 122,50 C122,34 118,28 116,30 C116,38 118,44 118,50 C112,40 104,38 100,42 C96,38 88,40 82,50 C82,44 84,38 84,30 C82,28 78,34 78,50 Z" fill="url(#hairG)"/>';
+    /* orecchini */
+    s += '<ellipse cx="76" cy="60" rx="3.5" ry="5" fill="' + skin + '"/><ellipse cx="124" cy="60" rx="3.5" ry="5" fill="' + skin + '"/>';
+    if(eq.ear){ s += '<circle cx="76" cy="66" r="3.4" fill="#38bdf8"/><circle cx="124" cy="66" r="3.4" fill="#38bdf8"/>'; }
+    /* occhi con ciglia */
+    s += '<ellipse cx="90" cy="55" rx="4.2" ry="5" fill="#fff"/><ellipse cx="110" cy="55" rx="4.2" ry="5" fill="#fff"/>';
+    s += '<circle cx="90.6" cy="55.5" r="2.4" fill="#312e81"/><circle cx="110.6" cy="55.5" r="2.4" fill="#312e81"/>';
+    s += '<circle cx="91.6" cy="54.5" r="0.9" fill="#fff"/><circle cx="111.6" cy="54.5" r="0.9" fill="#fff"/>';
+    s += '<path d="M84,46 Q90,42 95,46" stroke="#4a2a0e" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M105,46 Q110,42 116,46" stroke="#4a2a0e" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+    /* naso e bocca */
+    s += '<path d="M100,58 Q98.5,63 100.5,64.5" stroke="#d99a63" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M94,70 Q100,74.5 106,70" stroke="#c2185b" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    if(eq.face){ s += '<circle cx="83" cy="66" r="4" fill="#fb7185" opacity="0.7"/><circle cx="117" cy="66" r="4" fill="#fb7185" opacity="0.7"/>'; }
+    else { s += '<circle cx="83" cy="64" r="3.4" fill="#fda4af" opacity="0.5"/><circle cx="117" cy="64" r="3.4" fill="#fda4af" opacity="0.5"/>'; }
+  } else {
+    /* mantello dietro */
+    s += '<path d="M76,96 C56,122 50,196 60,244 C72,246 76,186 82,152 C86,186 92,246 100,246 C108,246 114,186 118,152 C124,186 128,246 140,244 C150,196 144,122 124,96 Z" fill="#7c3aed" opacity="0.92"/>';
+    /* gambe */
+    s += '<rect x="79" y="198" width="15" height="60" rx="7" fill="#3f4c63"/>';
+    s += '<rect x="106" y="198" width="15" height="60" rx="7" fill="#3f4c63"/>';
+    /* stivali */
+    s += '<path d="M77,252 h19 v10 q0,7 -7,7 h-5 q-7,0 -7,-7 Z" fill="#5b3a17"/>';
+    s += '<path d="M104,252 h19 v10 q0,7 -7,7 h-5 q-7,0 -7,-7 Z" fill="#5b3a17"/>';
+    /* tunica */
+    s += '<path d="M70,98 C64,150 62,192 74,216 L126,216 C138,192 136,150 130,98 C120,84 80,84 70,98 Z" fill="url(#tunicG)" stroke="rgba(0,0,0,0.28)" stroke-width="2"/>';
+    /* cintura */
+    s += '<rect x="70" y="168" width="60" height="10" rx="4" fill="#7c5a22"/>';
+    s += '<rect x="96" y="165" width="8" height="16" rx="2" fill="#fbbf24"/>';
+    /* braccia */
+    s += '<path d="M70,102 C52,118 48,152 52,176 L62,176 C60,150 64,124 78,110 Z" fill="url(#tunicG)"/>';
+    s += '<path d="M130,102 C148,118 152,152 148,176 L138,176 C140,150 136,124 122,110 Z" fill="url(#tunicG)"/>';
+    s += '<circle cx="57" cy="180" r="7" fill="' + skin + '"/>';
+    s += '<circle cx="143" cy="180" r="7" fill="' + skin + '"/>';
+    /* collo e testa */
+    s += '<rect x="92" y="74" width="16" height="18" rx="6" fill="' + skin + '"/>';
+    s += '<ellipse cx="100" cy="56" rx="23" ry="26" fill="' + skin + '"/>';
+    /* orecchie */
+    s += '<ellipse cx="76" cy="59" rx="5" ry="8" fill="' + skin + '"/><ellipse cx="124" cy="59" rx="5" ry="8" fill="' + skin + '"/>';
+    /* capelli */
+    s += '<path d="M77,52 C73,26 96,18 100,18 C104,18 127,26 123,52 C127,36 121,30 117,32 C117,40 119,45 119,51 C114,42 108,40 104,44 C102,38 98,38 96,44 C92,40 86,42 81,51 C81,45 83,40 83,32 C79,30 73,36 77,52 Z" fill="url(#hairG)"/>';
+    /* occhi */
+    s += '<ellipse cx="89" cy="56" rx="4.4" ry="5.2" fill="#fff"/><ellipse cx="111" cy="56" rx="4.4" ry="5.2" fill="#fff"/>';
+    s += '<circle cx="90" cy="57" r="2.5" fill="#1f2937"/><circle cx="110" cy="57" r="2.5" fill="#1f2937"/>';
+    s += '<circle cx="91" cy="56" r="0.9" fill="#fff"/><circle cx="109" cy="56" r="0.9" fill="#fff"/>';
+    /* sopracciglia, naso, bocca */
+    s += '<path d="M83,47 Q89,44 94,47" stroke="#4a2a0e" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M106,47 Q111,44 117,47" stroke="#4a2a0e" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M100,58 Q98,64 101,66" stroke="#d99a63" stroke-width="1.7" fill="none" stroke-linecap="round"/>';
+    s += '<path d="M94,71 Q100,75 106,71" stroke="#9f3a2e" stroke-width="2" fill="none" stroke-linecap="round"/>';
+    s += '<ellipse cx="82" cy="65" rx="3.6" ry="2.2" fill="#fda4af" opacity="0.6"/><ellipse cx="118" cy="65" rx="3.6" ry="2.2" fill="#fda4af" opacity="0.6"/>';
+  }
+
+  /* accessori equipaggiati */
+  if(eq.head){ s += '<text x="100" y="' + (isP?22:12) + '" font-size="22" text-anchor="middle">' + eq.head.icon + '</text>'; }
+  if(eq.handLeft){ s += '<text x="' + (isP?66:50) + '" y="' + (isP?196:174) + '" font-size="19" text-anchor="middle">' + eq.handLeft.icon + '</text>'; }
+  if(eq.handRight){ s += '<text x="' + (isP?134:150) + '" y="' + (isP?196:174) + '" font-size="19" text-anchor="middle">' + eq.handRight.icon + '</text>'; }
+  if(eq.neck){ s += '<text x="100" y="' + (isP?112:96) + '" font-size="12" text-anchor="middle">' + eq.neck.icon + '</text>'; }
+  if(eq.cape && !isP){ s += '<text x="100" y="88" font-size="16" text-anchor="middle">' + eq.cape.icon + '</text>'; }
+  if(eq.feet){ s += '<text x="100" y="' + (isP?250:252) + '" font-size="15" text-anchor="middle">' + eq.feet.icon + '</text>'; }
+  s += '</svg>';
+  return s;
+}
+function shade(hex){
+  try {
+    const n = parseInt(hex.slice(1), 16);
+    const r = Math.max(0, (n >> 16 & 255) - 42), g = Math.max(0, (n >> 8 & 255) - 42), b = Math.max(0, (n & 255) - 42);
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+  } catch(e){ return '#1e293b'; }
+}
+function renderAvatar(){
+  el('avatarBox').innerHTML = avatarSVG(G.gender, G.equipped);
+  const n = G.inventory.length;
+  el('equipHint').textContent = n === 0 ? 'Parti spoglio: compra oggetti nel Negozio!' : ('Oggetti posseduti: ' + n);
+}
+function renderHomePreviews(){
+  el('previewPrincipe').innerHTML = avatarSVG('principe', {});
+  el('previewPrincipessa').innerHTML = avatarSVG('principessa', {});
+}
+
+function pathPoint(i){
+  const t = i / 19;
+  const x = 28 + t * 330;
+  let y = 148 - Math.sin(i * 0.9) * 40 - t * 30;
+  y = Math.max(58, Math.min(182, y));
+  return { x: Math.round(x), y: Math.round(y) };
+}
+function renderMap(){
+  const svg = el('mapSvg');
+  const pts = [];
+  for(let i=0;i<20;i++) pts.push(pathPoint(i));
+  let html = '';
+  html += '<path d="M ' + pts.map(p => p.x + ' ' + p.y).join(' L ') + '" fill="none" stroke="#d4a373" stroke-width="15" stroke-linecap="round" opacity="0.85"/>';
+  html += '<path d="M ' + pts.map(p => p.x + ' ' + p.y).join(' L ') + '" fill="none" stroke="#e9c46a" stroke-width="5" stroke-linecap="round" stroke-dasharray="6,8"/>';
+  html += '<g transform="translate(356,18)">'
+    + '<rect x="0" y="24" width="36" height="30" fill="#94a3b8" stroke="#475569" stroke-width="1.5"/>'
+    + '<rect x="7" y="37" width="7" height="17" fill="#475569"/>'
+    + '<rect x="22" y="37" width="7" height="17" fill="#475569"/>'
+    + '<rect x="3" y="11" width="9" height="14" fill="#64748b"/>'
+    + '<rect x="24" y="11" width="9" height="14" fill="#64748b"/>'
+    + '<polygon points="3,11 7.5,0 12,11" fill="#e11d48"/>'
+    + '<polygon points="24,11 28.5,0 33,11" fill="#e11d48"/>'
+    + '<rect x="15" y="30" width="6" height="24" rx="3" fill="#1e293b"/>'
+    + '</g>';
+  html += '<text x="318" y="42" font-size="24" text-anchor="middle">🐉</text>';
+  for(let i=0;i<20;i++){
+    const p = pts[i];
+    const done = i < G.step;
+    const isGame = nodeTypes[i] === 'g';
+    html += '<circle cx="' + p.x + '" cy="' + p.y + '" r="' + (done?6:5) + '" fill="' + (done ? '#22c55e' : '#64748b') + '" stroke="#0b1329" stroke-width="2"/>';
+    html += '<text x="' + p.x + '" y="' + (p.y + 4) + '" font-size="8" text-anchor="middle">' + (isGame ? '🎮' : '⭐') + '</text>';
+  }
+  const h = pts[Math.min(G.step, 19)];
+  html += '<circle cx="' + h.x + '" cy="' + (h.y - 14) + '" r="9" fill="#f59e0b" stroke="#fff" stroke-width="2"/>';
+  html += '<text x="' + h.x + '" y="' + (h.y - 10) + '" font-size="12" text-anchor="middle">' + (G.gender === 'principe' ? '🤴' : '👸') + '</text>';
+  svg.innerHTML = html;
+}
+
+/* ---------- generatore domande ---------- */
+function genMath(f, lvl){
+  if(f === 0){
+    const r = Math.random();
+    if(r < 0.5){ const a=ri(2,10), b=ri(2,10); return { q: a+' × '+b+' = ?', a: a*b }; }
+    else if(r < 0.75){ const a=ri(1, 10+lvl), b=ri(1, Math.max(1, 20+lvl-a)); return { q: a+' + '+b+' = ?', a: a+b }; }
+    else { const a=ri(2, 12+lvl), b=ri(1, a-1); return { q: a+' − '+b+' = ?', a: a-b }; }
+  }
+  if(f === 1){
+    const r = Math.random();
+    if(r < 0.4){ const a=ri(2, Math.min(12, 2+lvl)), b=ri(2,12); return { q: a+' × '+b+' = ?', a: a*b }; }
+    else if(r < 0.7){ const b=ri(2, Math.min(9, 3+lvl)), res=ri(2, Math.min(12, 3+lvl)); return { q: (b*res)+' ÷ '+b+' = ?', a: res }; }
+    else if(r < 0.85){ const n=ri(2, Math.min(12, 2+lvl)); return { q: n+'² = ?', a: n*n }; }
+    else { const a=ri(25, 60+lvl*6), b=ri(5, Math.min(40, a-5)); return { q: a+' + '+b+' = ?', a: a+b }; }
+  }
+  if(f === 2){
+    const r = Math.random();
+    if(r < 0.22){ const a=ri(11, 18+lvl), b=ri(2, Math.min(9, 3+lvl)); return { q: a+' × '+b+' = ?', a: a*b }; }
+    else if(r < 0.42){ const b=ri(3,9), res=ri(7, 15+lvl); return { q: (b*res)+' ÷ '+b+' = ?', a: res }; }
+    else if(r < 0.6){ const P=[5,10,15,20,25,30,40,50,60,75]; const p=P[ri(0,P.length-1)]; const base = (p===25||p===75||p===15||p===5)?20:((p===50||p===10||p===30)?10:((p===40||p===60||p===20)?5:4)); const n=base*ri(1,20); return { q: p+'% di '+n+' = ?', a: n*p/100 }; }
+    else if(r < 0.8){ const x=ri(1,20), a=ri(2,9); return { q: a+'x = '+(a*x)+'. Quanto vale x?', a: x }; }
+    else if(r < 0.92){ const x=ri(1,15), a=ri(2,9), c=ri(1, Math.max(2, a*x-1)); return { q: a+'x − '+c+' = '+(a*x-c)+'. Quanto vale x?', a: x }; }
+    else { const n=ri(2, 5+lvl); return { q: '2^'+n+' = ?', a: Math.pow(2,n) }; }
+  }
+  if(f === 3){
+    const r = Math.random();
+    if(r < 0.3){ const a=ri(2,9), x=ri(1,20), c=a*x+ri(1,20); return { q: a+'x + '+(c-a*x)+' = '+c+'. Quanto vale x?', a: x }; }
+    else if(r < 0.55){ const n=ri(3, 12+lvl); return { q: '√'+n*n+' = ?', a: n }; }
+    else if(r < 0.75){ const den=ri(2,9), num=ri(1,den-1), k=den*ri(1,3); return { q: '('+num+'/'+den+') × '+k+' = ?', a: num*(k/den) }; }
+    else if(r < 0.9){ const p=[15,25,30,50,75][ri(0,4)]; const base=(p===25||p===75)?4:(p===50?2:(p===30?10:20)); const n=base*ri(2,10); return { q: p+'% di '+n+' = ?', a: n*p/100 }; }
+    else { const n=ri(2,6), k=ri(2,4); return { q: n+'^'+k+' = ?', a: Math.pow(n,k) }; }
+  }
+  const r = Math.random();
+  if(r < 0.3){ const r1=ri(2,9), r2=ri(2,9); return { q: 'x² − '+(r1+r2)+'x + '+(r1*r2)+' = 0. Soluzione minore?', a: Math.min(r1,r2) }; }
+  else if(r < 0.55){ const x=ri(2,15), y=ri(2,15); return { q: 'x + y = '+(x+y)+'  e  x − y = '+(x-y)+'. Quanto vale x?', a: x }; }
+  else if(r < 0.75){ const n=ri(2,6), k=ri(2,5); return { q: n+'^'+k+' = ?', a: Math.pow(n,k) }; }
+  else if(r < 0.9){ const a=ri(2,9), x=ri(1,20), c=a*x+ri(1,20); return { q: a+'x + '+(c-a*x)+' = '+c+'. Quanto vale x?', a: x }; }
+  else { const n=ri(3,15); return { q: '√'+n*n+' = ?', a: n }; }
+}
+function pickDistractors(ans, n){
+  const out = [], set = new Set([ans]);
+  let g = 0;
+  while(out.length < n && g++ < 300){
+    const d = Math.round(ans + (Math.random() < 0.5 ? -1 : 1) * ri(1, Math.max(2, Math.ceil(Math.abs(ans) * 0.3) + 1)));
+    if(d === ans || d < 0 || set.has(d)) continue;
+    set.add(d); out.push(d);
+  }
+  let k = 1;
+  while(out.length < n){ const d = ans + k; if(!set.has(d)){ set.add(d); out.push(d); } k++; }
+  return out;
+}
+function genQuestion(f, lvl){
+  for(let g=0; g<200; g++){
+    const r = genMath(f, lvl);
+    if(used(f).has(r.q)) continue;
+    used(f).add(r.q);
+    const opts = shuffle([r.a].concat(pickDistractors(r.a, 3)));
+    return { q: r.q, ans: r.a, okIdx: opts.indexOf(r.a), opts: opts };
+  }
+  const r = genMath(f, lvl);
+  const opts = shuffle([r.a].concat(pickDistractors(r.a, 3)));
+  return { q: r.q, ans: r.a, okIdx: opts.indexOf(r.a), opts: opts };
+}
+
+/* ---------- flusso ---------- */
+let curQ = null;
+let nodeToken = 0;
+function qNumber(){ let n=0; for(let i=0;i<=G.step;i++) if(nodeTypes[i]==='q') n++; return n; }
+
+function renderNode(){
+  renderHeader(); renderMap();
+  const t = nodeTypes[G.step];
+  if(t === 'q') renderQuestion();
+  else launchGame(GAME_ORDER[Math.floor(G.step / 4)]);
+}
+function renderQuestion(){
+  curQ = genQuestion(G.fascia, G.level);
+  el('mainPanel').innerHTML =
+    '<div class="q-title">Domanda ' + qNumber() + ' di 15 · ' + LEVEL_THEMES[Math.min(G.level,10)-1] + ' · Livello ' + Math.min(G.level,10) + '</div>' +
+    '<div class="big-q">' + curQ.q + '</div>' +
+    '<div class="opts">' + curQ.opts.map((o,i) => '<button class="opt" onclick="pick(' + i + ')">' + o + '</button>').join('') + '</div>' +
+    '<div class="fb" id="qfb"></div>' +
+    '<button class="next hidden" id="qnext" onclick="nextNode()">Avanti ➔</button>';
+}
+function pick(i){
+  if(!curQ) return;
+  const btns = document.querySelectorAll('#mainPanel .opt');
+  btns.forEach(b => b.disabled = true);
+  btns.forEach((b, idx) => { if(idx === curQ.okIdx) b.classList.add('right'); });
+  const fb = el('qfb');
+  if(i === curQ.okIdx){
+    G.coins += 3;
+    playSound('correct'); playSound('coin');
+    fb.textContent = '✅ Giusto! +3€';
+    fb.style.color = '#4ade80';
+  } else {
+    playSound('wrong');
+    fb.textContent = '❌ Sbagliato! La risposta era ' + curQ.ans;
+    fb.style.color = '#f87171';
+  }
+  el('qnext').classList.remove('hidden');
+  save(); renderHeader();
+}
+function nextNode(){
+  G.step++;
+  if(G.step >= 20){ levelUp(); return; }
+  renderNode();
+}
+function levelUp(){
+  playSound('win');
+  G.level = G.level + 1;
+  G.step = 0;
+  save();
+  if(G.level > 10){
+    el('overlay').classList.remove('hidden');
+    el('overlayBody').innerHTML =
+      '<h2>🏆 HAI CONQUISTATO IL CASTELLO!</h2>' +
+      '<p>' + G.nome + ', sei il campione del Regno Incantato! Hai superato tutti e 10 i livelli della fascia ' + FASCE[G.fascia].label + '.</p>' +
+      '<button class="btn-big" onclick="victoryReset()">Gioca ancora ➔</button>';
+    return;
+  }
+  el('overlay').classList.remove('hidden');
+  el('overlayBody').innerHTML =
+    '<h2>🎉 LIVELLO SUPERATO!</h2>' +
+    '<p>Hai completato la tappa <b>' + LEVEL_THEMES[G.level-2] + '</b>!<br>Ora ti aspetta: <b style="color:var(--gold)">' + LEVEL_THEMES[G.level-1] + '</b> (Livello ' + G.level + ')</p>' +
+    '<button class="btn-big" style="margin-bottom:8px" onclick="openShopFromLevelUp()">🛍️ Apri il Negozio</button>' +
+    '<button class="btn-big" style="background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="closeOverlayAndContinue()">Prossimo livello ➔</button>';
+}
+function victoryReset(){
+  el('overlay').classList.add('hidden');
+  G.level = 1; G.step = 0; G.coins = 0; G.inventory = []; G.equipped = {};
+  save(); renderHeader(); renderAvatar(); renderNode();
+}
+function closeOverlayAndContinue(){
+  el('overlay').classList.add('hidden');
+  renderHeader(); renderAvatar(); renderNode();
+}
+
+/* ---------- GIOCHI ---------- */
+function launchGame(id){
+  const tok = ++nodeToken;
+  el('mainPanel').innerHTML = '<div class="game-title">' + GAME_NAME[id] + '</div><div class="hint">Preparati…</div>';
+  setTimeout(function(){ if(tok === nodeToken) GAMES[id](); }, 350);
+}
+function gameDone(id){
+  G.coins += GAME_BONUS[id];
+  playSound('coin');
+  save(); renderHeader();
+  nextNode();
+}
+
+/* --- labirinto --- */
+let maze = null;
+function genMaze(R, C, wp){
+  for(let a=0; a<300; a++){
+    const g = [];
+    for(let r=0;r<R;r++){ const row=[]; for(let c=0;c<C;c++) row.push(Math.random() < wp ? '#' : '.'); g.push(row); }
+    g[0][0]='.'; g[R-1][C-1]='.';
+    if(mazeConn(g, 0, 0, R-1, C-1)) return g;
+  }
+  const g = []; for(let r=0;r<R;r++){ const row=[]; for(let c=0;c<C;c++) row.push('.'); g.push(row); }
+  return g;
+}
+function mazeConn(g, sr, sc, er, ec){
+  const R=g.length, C=g[0].length;
+  const seen = Array.from({length:R}, () => Array(C).fill(false));
+  const st = [[sr,sc]]; seen[sr][sc] = true;
+  while(st.length){
+    const p = st.pop(); const r=p[0], c=p[1];
+    if(r===er && c===ec) return true;
+    for(let k=0;k<4;k++){
+      const dr=[1,-1,0,0][k], dc=[0,0,1,-1][k];
+      const nr=r+dr, nc=c+dc;
+      if(nr<0||nc<0||nr>=R||nc>=C||seen[nr][nc]||g[nr][nc]==='#') continue;
+      seen[nr][nc]=true; st.push([nr,nc]);
     }
   }
-  const canvas = document.getElementById('confettiCanvas');
-  const ctx = canvas.getContext('2d');
-  let confetti = [];
-  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  window.addEventListener('resize', resizeCanvas); resizeCanvas();
-  function triggerConfetti() {
-    for (let i = 0; i < 35; i++) {
-      confetti.push({
-        x: window.innerWidth / 2, y: window.innerHeight / 2,
-        vx: (Math.random() - 0.5) * 10, vy: (Math.random() - 0.7) * 10,
-        size: Math.random() * 6 + 4, color: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'][Math.floor(Math.random()*4)],
-        life: 70
-      });
-    }
+  return false;
+}
+function labirinto(){
+  const sz = Math.min(9, 5 + Math.floor(G.level / 2));
+  maze = { grid: genMaze(sz, sz, 0.30), r:0, c:0 };
+  renderMaze();
+}
+function renderMaze(){
+  const R=maze.grid.length, C=maze.grid[0].length;
+  let html = '<div class="game-title">🏰 Labirinto — porta il tuo eroe al castello!</div><div class="maze-wrap"><div class="maze" style="grid-template-columns:repeat(' + C + ',var(--mc))">';
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++){
+    let cls = 'mcell', inner = '';
+    if(r===maze.r && c===maze.c){ inner = G.gender === 'principe' ? '🤴' : '👸'; }
+    else if(maze.grid[r][c] === '#'){ cls += ' wall'; }
+    else if(r===R-1 && c===C-1){ inner = '🏰'; }
+    html += '<div class="' + cls + '">' + inner + '</div>';
   }
-  function drawConfetti() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    confetti.forEach((p, i) => {
-      p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life -= 1.5;
-      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
-      if(p.life <= 0) confetti.splice(i, 1);
-    });
-    requestAnimationFrame(drawConfetti);
+  html += '</div></div>';
+  html += '<div class="dpad">'
+    + '<div></div><button onclick="mazeMove(-1,0)">⬆️</button><div></div>'
+    + '<button onclick="mazeMove(0,-1)">⬅️</button><button onclick="mazeMove(1,0)">⬇️</button><button onclick="mazeMove(0,1)">➡️</button>'
+    + '</div>';
+  html += '<div class="hint">Usa le frecce o la tastiera. Arriva all\'uscita 🏰</div>';
+  el('mainPanel').innerHTML = html;
+}
+function mazeMove(dr, dc){
+  if(!maze) return;
+  const R=maze.grid.length, C=maze.grid[0].length;
+  const nr=maze.r+dr, nc=maze.c+dc;
+  if(nr<0||nc<0||nr>=R||nc>=C) return;
+  if(maze.grid[nr][nc] === '#'){ playSound('flip'); return; }
+  maze.r=nr; maze.c=nc; playSound('flip');
+  if(nr===R-1 && nc===C-1){ maze=null; gameDone('labirinto'); return; }
+  renderMaze();
+}
+
+/* --- tris --- */
+const TLINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let tri = null;
+function trisWin(b){ for(let k=0;k<TLINES.length;k++){ const a=TLINES[k][0],c=TLINES[k][1],d=TLINES[k][2]; if(b[a] && b[a]===b[c] && b[a]===b[d]) return b[a]; } return null; }
+function trisAI(b){
+  for(let k=0;k<TLINES.length;k++){
+    const a=TLINES[k][0],c=TLINES[k][1],d=TLINES[k][2];
+    if(b[a]==='O'&&b[c]==='O'&&b[d]==='') return d;
+    if(b[a]==='O'&&b[d]==='O'&&b[c]==='') return c;
+    if(b[c]==='O'&&b[d]==='O'&&b[a]==='') return a;
   }
-  drawConfetti();
-  const CAVALIERE_ITEMS = Array.from({length: 30}, (_, i) => ({
-    id: `c${i+1}`, name: ["Elmo d'Acciaio", "Spada Reale", "Scudo di Ferro", "Corazza d'Argento", "Mantello Viola", "Stivali di Cuoio"][i%6] + ` Niv.${Math.floor(i/6)+1}`,
-    icon: ["🪖", "⚔️", "🛡️", "🥋", "🧥", "🥾"][i%6], slot: ["head", "handLeft", "handRight", "body", "cape", "feet"][i%6], price: (i+1)*20
-  }));
-  const PRINCIPESSA_ITEMS = Array.from({length: 30}, (_, i) => ({
-    id: `p${i+1}`, name: ["Tiara d'Oro", "Scettro Reale", "Aura Magica", "Abito Rosa", "Mantello di Seta", "Scarpe Dorate"][i%6] + ` Niv.${Math.floor(i/6)+1}`,
-    icon: ["👑", "🪄", "✨", "👗", "🧥", "👠"][i%6], slot: ["head", "handLeft", "handRight", "body", "cape", "feet"][i%6], price: (i+1)*20
-  }));
-  const PATH_COORDS = [
-    {x: 30, y: 280}, {x: 70, y: 280}, {x: 100, y: 260}, {x: 120, y: 230}, {x: 150, y: 210},
-    {x: 190, y: 210}, {x: 230, y: 210}, {x: 260, y: 190}, {x: 270, y: 160}, {x: 250, y: 135},
-    {x: 210, y: 125}, {x: 170, y: 120}, {x: 130, y: 115}, {x: 100, y: 95},  {x: 95, y: 70},
-    {x: 110, y: 50},  {x: 140, y: 40},  {x: 175, y: 35}
-  ];
-  let state = {
-    heroName: "Eroe", heroAge: 10, ageTier: "kids", gender: "cavaliere", lives: 5, level: 1, step: 1, score: 0, coins: 0,
-    correctStreak: 0, inventory: [], equipped: {}, lastQuestionKey: "", skillGameIndex: 0
-  };
-  let currentRound = null;
-  let timerId = null;
-  let timeLeft = 0;
-  let answered = false;
-  let trisState = { board: [], active: false };
-  let memoryState = { flipped: [], matched: 0, totalPairs: 4, cards: [] };
-  let mazeState = { pos: {r:0, c:0}, grid: [] };
-  let colorState = { activeColor: 1, filled: {} };
-  
-  function setGender(g) {
-    state.gender = g;
-    document.getElementById('cardCavaliere').classList.toggle('selected', g === 'cavaliere');
-    document.getElementById('cardPrincipessa').classList.toggle('selected', g === 'principessa');
+  for(let k=0;k<TLINES.length;k++){
+    const a=TLINES[k][0],c=TLINES[k][1],d=TLINES[k][2];
+    if(b[a]==='X'&&b[c]==='X'&&b[d]==='') return d;
+    if(b[a]==='X'&&b[d]==='X'&&b[c]==='') return c;
+    if(b[c]==='X'&&b[d]==='X'&&b[a]==='') return a;
   }
-  
-  function startGame() {
-    const inputName = document.getElementById('charNameInput').value.trim();
-    const inputAge = parseInt(document.getElementById('charAgeInput').value);
-    
-    state.heroName = inputName || (state.gender === 'cavaliere' ? 'Sir Lancelot' : 'Principessa Aurora');
-    state.heroAge = isNaN(inputAge) ? 10 : inputAge;
-    
-    if (state.heroAge <= 10) {
-      state.ageTier = 'kids';
-    } else if (state.heroAge <= 15) {
-      state.ageTier = 'teens';
+  if(b[4]==='') return 4;
+  const corners = [0,2,6,8]; for(let k=0;k<4;k++) if(b[corners[k]]==='') return corners[k];
+  for(let i=0;i<9;i++) if(b[i]==='') return i;
+  return -1;
+}
+function tris(){
+  tri = { b: Array(9).fill(''), msg: '' };
+  renderTris();
+}
+function renderTris(){
+  let html = '<div class="game-title">⭕ Tris — batti il reggente! (vinci o pareggia per passare)</div>';
+  if(tri.msg) html += '<div class="fb" style="color:#f87171">' + tri.msg + '</div>';
+  html += '<div class="tris">';
+  for(let i=0;i<9;i++){
+    html += '<div class="cell" onclick="trisMove(' + i + ')">' + (tri.b[i] === 'X' ? '❌' : (tri.b[i] === 'O' ? '⭕' : '')) + '</div>';
+  }
+  html += '</div><div class="hint">Tu sei ❌ — il reggente è ⭕</div>';
+  el('mainPanel').innerHTML = html;
+}
+function trisMove(i){
+  if(!tri || tri.b[i] !== '') return;
+  tri.b[i] = 'X';
+  if(trisWin(tri.b) === 'X'){ tri = null; gameDone('tris'); return; }
+  if(tri.b.every(x => x !== '')){ tri = null; gameDone('tris'); return; }
+  const ai = trisAI(tri.b);
+  if(ai >= 0) tri.b[ai] = 'O';
+  if(trisWin(tri.b) === 'O'){
+    playSound('wrong');
+    tri.msg = 'Il reggente ha vinto… riprova!';
+    renderTris();
+    setTimeout(tris, 1100);
+    return;
+  }
+  if(tri.b.every(x => x !== '')){ tri = null; gameDone('tris'); return; }
+  playSound('flip');
+  renderTris();
+}
+
+/* --- impiccato --- */
+let imp = null;
+function impiccato(){
+  const list = WORDS[G.fascia];
+  imp = { word: list[ri(0, list.length-1)], lives: 6, guessed: [] };
+  renderImpiccato();
+}
+function renderImpiccato(){
+  const shown = imp.word.split('').map(ch => imp.guessed.indexOf(ch) >= 0 ? ch : '_').join(' ');
+  let alpha = '';
+  for(let c=0; c<26; c++){
+    const ch = String.fromCharCode(65 + c);
+    const usedCh = imp.guessed.indexOf(ch) >= 0;
+    alpha += '<button class="' + (usedCh ? 'used' : '') + '" onclick="impGuess(\'' + ch + '\')"' + (usedCh ? ' disabled' : '') + '>' + ch + '</button>';
+  }
+  el('mainPanel').innerHTML =
+    '<div class="game-title">🔤 Parola magica — indovina la parola!</div>' +
+    '<div class="hearts">' + '❤️'.repeat(Math.max(0, imp.lives)) + '🖤'.repeat(6 - Math.max(0, imp.lives)) + '</div>' +
+    '<div class="hang">' + shown + '</div>' +
+    '<div class="alpha">' + alpha + '</div>' +
+    '<div class="hint">' + imp.word.length + ' lettere — 6 vite</div>';
+}
+function impGuess(ch){
+  if(!imp || imp.guessed.indexOf(ch) >= 0) return;
+  imp.guessed.push(ch);
+  const ok = imp.word.indexOf(ch) >= 0;
+  if(!ok) imp.lives--;
+  playSound(ok ? 'flip' : 'wrong');
+  const all = imp.word.split('').every(c => imp.guessed.indexOf(c) >= 0);
+  if(all){ imp = null; gameDone('impiccato'); return; }
+  if(imp.lives <= 0){
+    el('mainPanel').innerHTML = '<div class="game-title">💥 Il sortilegio è fallito…</div><div class="hang">' + imp.word + '</div><div class="hint">Riprova con una nuova parola!</div>';
+    playSound('wrong');
+    setTimeout(impiccato, 1100);
+    return;
+  }
+  renderImpiccato();
+}
+
+/* --- problema --- */
+let prob = null;
+function problema(){
+  const bank = PROBLEMS[G.fascia];
+  const p = bank[ri(0, bank.length-1)];
+  prob = p;
+  el('mainPanel').innerHTML =
+    '<div class="game-title">📜 Problema del Regno</div>' +
+    '<div class="prob-q">' + p.q + '</div>' +
+    '<div class="opts">' + p.opts.map((o,i) => '<button class="opt" onclick="probPick(' + i + ')">' + o + '</button>').join('') + '</div>';
+}
+function probPick(i){
+  if(i === prob.a){ prob = null; playSound('win'); gameDone('problema'); }
+  else { playSound('wrong'); problema(); }
+}
+
+/* --- drago --- */
+let drago = null;
+function launchDrago(){ drago = { hits:0 }; renderDrago(); }
+function renderDrago(){
+  const q = genQuestion(G.fascia, G.level);
+  drago.q = q;
+  const hearts = '❤️'.repeat(3 - drago.hits) + '🖤'.repeat(drago.hits);
+  el('mainPanel').innerHTML =
+    '<div class="game-title">🐉 Sconfiggi il Drago del Castello!</div>' +
+    '<div class="dragon">🐉</div>' +
+    '<div class="hearts">' + hearts + '</div>' +
+    '<div class="big-q">' + q.q + '</div>' +
+    '<div class="opts">' + q.opts.map((o,i) => '<button class="opt" onclick="dragoPick(' + i + ')">' + o + '</button>').join('') + '</div>' +
+    '<div class="hint">3 risposte giuste per sconfiggerlo!</div>';
+}
+function dragoPick(i){
+  if(!drago) return;
+  if(i === drago.q.okIdx){
+    drago.hits++; playSound('correct');
+    if(drago.hits >= 3){ drago = null; gameDone('drago'); return; }
+    renderDrago();
+  } else { playSound('wrong'); renderDrago(); }
+}
+const GAMES = { labirinto: labirinto, tris: tris, impiccato: impiccato, problema: problema, drago: launchDrago };
+
+/* ---------- negozio ---------- */
+let shopMsg = '';
+let shopAfterLevel = false;
+function openShop(){
+  if(el('screenHome').classList.contains('hidden') === false) return;
+  shopMsg = '';
+  el('overlay').classList.remove('hidden');
+  renderShop();
+}
+function openShopFromLevelUp(){
+  shopAfterLevel = true;
+  el('overlay').classList.add('hidden');
+  openShop();
+}
+function renderShop(){
+  const items = SHOP[G.gender];
+  let html = '<h2>🛍️ Negozio del Regno</h2><p>Le tue monete: <b style="color:var(--gold)">' + G.coins + '€</b></p>';
+  if(shopMsg) html += '<p style="color:#f87171;font-weight:700">' + shopMsg + '</p>';
+  items.forEach(it => {
+    const owned = G.inventory.indexOf(it.id) >= 0;
+    const eq = G.equipped[it.slot];
+    const inUse = eq && eq.id === it.id;
+    let btn;
+    if(!owned) btn = '<button class="buy" onclick="buyItem(\'' + it.id + '\')">Compra ' + it.price + '€</button>';
+    else if(inUse) btn = '<button class="inuse" onclick="buyItem(\'' + it.id + '\')">In uso</button>';
+    else btn = '<button onclick="buyItem(\'' + it.id + '\')">Indossa</button>';
+    html += '<div class="shop-item"><div style="display:flex;align-items:center;gap:10px;min-width:0">'
+      + '<span class="ic">' + it.icon + '</span>'
+      + '<div><div class="nm">' + it.name + '</div><div class="pr">' + (owned ? 'Posseduto' : it.price + '€') + '</div></div></div>'
+      + btn + '</div>';
+  });
+  html += '<button class="btn-big" style="width:100%;margin-top:6px" onclick="closeShop()">' + (shopAfterLevel ? 'Continua il cammino ➔' : 'Chiudi ➔') + '</button>';
+  el('overlayBody').innerHTML = html;
+}
+function buyItem(id){
+  const items = SHOP[G.gender];
+  const it = items.find(x => x.id === id);
+  const owned = G.inventory.indexOf(id) >= 0;
+  if(!owned){
+    if(G.coins >= it.price){
+      G.coins -= it.price;
+      G.inventory.push(id);
+      G.equipped[it.slot] = it;
+      playSound('buy');
+      shopMsg = '';
     } else {
-      state.ageTier = 'adults';
-    }
-    
-    document.getElementById('initModal').style.display = 'none';
-    updateHeader();
-    renderKingdomMap();
-    renderAvatarSVG();
-    renderShop();
-    renderRound();
-  }
-  
-  function updateHeader() {
-    document.getElementById('heroNameDisplay').textContent = `${state.heroName} (${state.heroAge} anni)`;
-    document.getElementById('heroTitleDisplay').textContent = state.gender === 'cavaliere' ? 'Cavaliere Uomo' : 'Principessa Donna';
-    document.getElementById('livesDisplay').textContent = "❤️".repeat(Math.max(0, state.lives));
-    document.getElementById('pillLevel').textContent = state.level;
-    document.getElementById('pillStep').textContent = `${state.step}/20`;
-    document.getElementById('pillCoins').textContent = state.coins;
-    document.getElementById('pillScore').textContent = state.score;
-    
-    const tierLabels = { kids: "2ª-3ª Elem", teens: "5ª Elem-Media", adults: "Superior-Pro" };
-    document.getElementById('pillTier').textContent = tierLabels[state.ageTier];
-  }
-  
-  function renderAvatarSVG() {
-    const box = document.getElementById('avatarSvgBox');
-    const isCav = state.gender === 'cavaliere';
-    if (isCav) {
-      box.innerHTML = `
-        <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="100" cy="245" rx="50" ry="8" fill="rgba(0,0,0,0.5)"/>
-          <path d="M55,95 L30,235 L170,235 L145,95 Z" fill="#7e22ce"/>
-          <rect x="75" y="190" width="20" height="45" fill="#334155"/>
-          <rect x="105" y="190" width="20" height="45" fill="#334155"/>
-          <path d="M65,95 L135,95 L140,195 L60,195 Z" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
-          <path d="M80,95 L120,95 L115,160 L85,160 Z" fill="#2563eb"/>
-          <circle cx="100" cy="65" r="26" fill="#fdba74"/>
-          <path d="M72,60 Q100,30 128,60 Q125,45 100,42 Q75,45 72,60" fill="#451a03"/>
-          <circle cx="92" cy="65" r="3" fill="#0f172a"/>
-          <circle cx="108" cy="65" r="3" fill="#0f172a"/>
-          <path d="M94,77 Q100,82 106,77" stroke="#0f172a" stroke-width="2" fill="none"/>
-          <text x="100" y="32" font-size="26" text-anchor="middle">${state.equipped.head || ''}</text>
-          <text x="40" y="150" font-size="28" text-anchor="middle">${state.equipped.handLeft || '⚔️'}</text>
-          <text x="160" y="150" font-size="28" text-anchor="middle">${state.equipped.handRight || '🛡️'}</text>
-        </svg>
-      `;
-    } else {
-      box.innerHTML = `
-        <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="100" cy="245" rx="50" ry="8" fill="rgba(0,0,0,0.5)"/>
-          <path d="M60,60 C40,120 45,220 70,230 C80,180 120,180 130,230 C155,220 160,120 140,60 Z" fill="#facc15"/>
-          <path d="M65,100 L135,100 L165,240 L35,240 Z" fill="#ec4899" stroke="#be185d" stroke-width="2"/>
-          <path d="M80,100 L120,100 L140,240 L60,240 Z" fill="#f472b6"/>
-          <path d="M75,90 L125,90 L120,130 L80,130 Z" fill="#db2777"/>
-          <circle cx="100" cy="65" r="26" fill="#fde047"/>
-          <circle cx="100" cy="67" r="23" fill="#ffedd5"/>
-          <circle cx="91" cy="65" r="4" fill="#0284c7"/>
-          <circle cx="109" cy="65" r="4" fill="#0284c7"/>
-          <path d="M94,76 Q100,81 106,76" stroke="#e11d48" stroke-width="2" fill="none"/>
-          <polygon points="82,46 90,32 100,43 110,32 118,46" fill="#fbbf24" stroke="#d97706"/>
-          <text x="100" y="28" font-size="26" text-anchor="middle">${state.equipped.head || ''}</text>
-          <text x="40" y="150" font-size="28" text-anchor="middle">${state.equipped.handLeft || '✨'}</text>
-          <text x="160" y="150" font-size="28" text-anchor="middle">${state.equipped.handRight || ''}</text>
-        </svg>
-      `;
-    }
-  }
-  function renderKingdomMap() {
-    document.getElementById('mapTargetEmoji').textContent = state.gender === 'cavaliere' ? '👸' : '🤴';
-    document.getElementById('playerTokenEmoji').textContent = state.gender === 'cavaliere' ? '⚔️' : '👸';
-    const pathIndex = Math.min(PATH_COORDS.length - 1, Math.floor((state.step - 1) * (PATH_COORDS.length / 20)));
-    const pos = PATH_COORDS[pathIndex];
-    document.getElementById('playerToken').setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
-  }
-  function renderShop() {
-    const list = document.getElementById('sideShopList');
-    const modalList = document.getElementById('modalShopList');
-    list.innerHTML = ""; modalList.innerHTML = "";
-    const items = state.gender === 'cavaliere' ? CAVALIERE_ITEMS : PRINCIPESSA_ITEMS;
-    items.forEach(g => {
-      const owned = state.inventory.includes(g.id);
-      const isEquipped = state.equipped[g.slot] === g.icon;
-      
-      const itemHTML = `
-        <div><b>${g.icon} ${g.name}</b><br/><small style="color:var(--muted);">${owned ? 'Posseduto' : g.price + ' 🪙'}</small></div>
-        <button style="padding:4px 8px; font-size:11px;" onclick="buyOrEquip('${g.id}')">
-          ${!owned ? 'Compra' : (isEquipped ? 'In Uso' : 'Indossa')}
-        </button>
-      `;
-      const item1 = document.createElement('div'); item1.className = 'shopItem'; item1.innerHTML = itemHTML;
-      const item2 = document.createElement('div'); item2.className = 'shopItem'; item2.innerHTML = itemHTML;
-      list.appendChild(item1); modalList.appendChild(item2);
-    });
-  }
-  function buyOrEquip(id) {
-    const items = state.gender === 'cavaliere' ? CAVALIERE_ITEMS : PRINCIPESSA_ITEMS;
-    const g = items.find(x => x.id === id);
-    if (!state.inventory.includes(g.id)) {
-      if (state.coins >= g.price) {
-        state.coins -= g.price;
-        state.inventory.push(g.id);
-        state.equipped[g.slot] = g.icon;
-      } else { alert("Monete insufficienti!"); return; }
-    } else {
-      state.equipped[g.slot] = (state.equipped[g.slot] === g.icon) ? "" : g.icon;
-    }
-    updateHeader(); renderAvatarSVG(); renderShop();
-  }
-  
-  function generateRound(level) {
-    let key;
-    if (state.ageTier === 'kids') {
-      const isMult = Math.random() > 0.4;
-      if (isMult) {
-        let t, k;
-        do {
-          t = Math.floor(Math.random() * 5) + 1;
-          let maxK = Math.floor(20 / t);
-          k = Math.floor(Math.random() * maxK) + 1;
-          key = `${t}x${k}`;
-        } while (key === state.lastQuestionKey);
-        state.lastQuestionKey = key;
-        return { question: `${t} × ${k} = ?`, answer: t * k };
-      } else {
-        const isAdd = Math.random() > 0.5;
-        if (isAdd) {
-          let a = Math.floor(Math.random() * 15) + 1;
-          let b = Math.floor(Math.random() * (20 - a)) + 1;
-          return { question: `${a} + ${b} = ?`, answer: a + b };
-        } else {
-          let a = Math.floor(Math.random() * 19) + 2;
-          let b = Math.floor(Math.random() * a) + 1;
-          return { question: `${a} - ${b} = ?`, answer: a - b };
-        }
-      }
-    } else {
-      let minTable, maxTable;
-      if (state.ageTier === 'teens') {
-        minTable = Math.min(level + 1, 4);
-        maxTable = Math.min(level + 4, 10);
-      } else {
-        minTable = Math.min(level + 2, 6);
-        maxTable = Math.min(level + 6, 12);
-      }
-      let t, k;
-      do {
-        t = Math.floor(Math.random() * (maxTable - minTable + 1)) + minTable;
-        k = Math.floor(Math.random() * 10) + 1;
-        key = `${t}x${k}`;
-      } while (key === state.lastQuestionKey);
-      state.lastQuestionKey = key;
-      return { question: `${t} × ${k} = ?`, answer: t * k };
-    }
-  }
-  
-  function renderRound() {
-    currentRound = generateRound(state.level);
-    document.getElementById('questionText').textContent = currentRound.question;
-    document.getElementById('feedback').textContent = "Rispondi per avanzare!";
-    document.getElementById('feedback').style.color = "var(--text)";
-    document.getElementById('nextBtn').disabled = true;
-    
-    const isMC = state.level <= 2 && state.ageTier === 'kids';
-    document.getElementById('inputControls').style.display = isMC ? "none" : "flex";
-    document.getElementById('optionsGrid').style.display = isMC ? "grid" : "none";
-    if(isMC) {
-      const grid = document.getElementById('optionsGrid');
-      grid.innerHTML = "";
-      const opts = [currentRound.answer, currentRound.answer + 2, Math.max(1, currentRound.answer - 3), currentRound.answer + 5].sort(() => Math.random() - 0.5);
-      opts.forEach(opt => {
-        const b = document.createElement('button');
-        b.className = 'optBtn'; b.textContent = opt;
-        b.onclick = () => checkAnswer(opt);
-        grid.appendChild(b);
-      });
-    }
-    document.getElementById('answerInput').value = "";
-    answered = false;
-    
-    let timeLimit = 20;
-    if (state.ageTier === 'kids') timeLimit = 25;
-    else if (state.ageTier === 'adults') timeLimit = 12;
-    
-    startTimer(timeLimit);
-  }
-  
-  function startTimer(sec) {
-    if(timerId) clearInterval(timerId);
-    timeLeft = sec;
-    document.getElementById('timerText').textContent = `${timeLeft}s`;
-    timerId = setInterval(() => {
-      timeLeft--;
-      document.getElementById('timerText').textContent = `${timeLeft}s`;
-      if(timeLeft <= 0) { clearInterval(timerId); if(!answered) checkAnswer(-1); }
-    }, 1000);
-  }
-  
-  function checkAnswer(val) {
-    if(answered) return;
-    answered = true;
-    clearInterval(timerId);
-    if(val === currentRound.answer) {
-      state.coins += 10; state.score += 20; state.correctStreak++;
-      playSound('correct'); triggerConfetti();
-      document.getElementById('feedback').textContent = "🎉 Corretto! Avanzi sul percorso!";
-      document.getElementById('feedback').style.color = "#22c55e";
-    } else {
-      state.lives--; state.correctStreak = 0;
-      playSound('trash');
-      document.getElementById('feedback').textContent = `❌ Sbagliato! La risposta corretta era ${currentRound.answer}`;
-      document.getElementById('feedback').style.color = "#ef4444";
-      if(state.lives <= 0) { showGameOver(); return; }
-    }
-    document.getElementById('nextBtn').disabled = false;
-    updateHeader();
-  }
-  
-  document.getElementById('checkBtn').onclick = () => checkAnswer(Number(document.getElementById('answerInput').value));
-  document.getElementById('nextBtn').onclick = () => {
-    state.step++;
-    renderKingdomMap();
-    if(state.correctStreak > 0 && state.correctStreak % 5 === 0) {
-      triggerSkillGame();
+      playSound('wrong');
+      shopMsg = '❌ Monete insufficienti! Rispondi alle domande per guadagnare 3€ a risposta giusta.';
+      renderShop();
       return;
     }
-    if(state.correctStreak > 0 && state.correctStreak % 4 === 0) {
-      triggerMultiGame();
-      return;
-    }
-    if(state.correctStreak > 0 && state.correctStreak % 3 === 0) {
-      triggerProblemGame();
-      return;
-    }
-    if(state.step > 20) {
-      showLevelUpModal();
-      return;
-    }
-    renderRound();
-    updateHeader();
-  };
-  
-  const MULTI_DATABASE = {
-    1: [
-      { subject: "🇮🇹 Italiano", text: "Qual è il contrario della parola 'alto'?", options: ["Basso", "Lungo", "Grande", "Stretto"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Qual è la capitale d'Italia?", options: ["Roma", "Milano", "Napoli", "Torino"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Di cosa hanno principalmente bisogno le piante per la fotosintesi?", options: ["Luce e acqua", "Latte e zucchero", "Buio e vento", "Sabbia e sale"], correct: 0 }
-    ],
-    2: [
-      { subject: "🇮🇹 Italiano", text: "Qual è il plurale di 'Luce'?", options: ["Luci", "Luces", "Lucie", "Luca"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Quale mare bagna le coste dell'Italia ad Est?", options: ["Mare Adriatico", "Mare Tirreno", "Oceano Atlantico", "Mar Nero"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Quale animale è un mammifero?", options: ["Cane", "Aquila", "Squalo", "Rana"], correct: 0 }
-    ],
-    3: [
-      { subject: "🇮🇹 Italiano", text: "Qual è l'analisi grammaticale di 'velocemente'?", options: ["Avverbio", "Nome", "Verbo", "Aggettivo"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Quale catena montuosa separa l'Italia dalla Francia?", options: ["Le Alpi", "Gli Appennini", "I Pirenei", "I Carpazi"], correct: 0 },
-      { subject: "🔬 Scienze", text: "In quale stato si trova l'acqua quando diventa ghiaccio?", options: ["Stato Solido", "Stato Liquido", "Stato Gassoso", "Plasma"], correct: 0 }
-    ],
-    4: [
-      { subject: "🇮🇹 Italiano", text: "Nella frase 'Il cane abbaia forte', che funzione ha 'Il cane'?", options: ["Soggetto", "Complemento oggetto", "Predicato verbale", "Atto"], correct: 0 },
-      { subject: "🗺️ Geografia", text: "Qual è il fiume più lungo d'Italia?", options: ["Il Po", "L'Adige", "Il Tevere", "L'Arno"], correct: 0 },
-      { subject: "🔬 Scienze", text: "Qual è l'organo principale dell'apparato circolatorio umano?", options: ["Il Cuore", "I Polmoni", "Lo Stomaco", "Il Fegato"], correct: 0 }
-    ],
-    5: [
-      { subject: "🇮🇹 Italiano", text: "Che cos'è una 'similitudine' nelle figure retoriche?", options: ["Un paragone introdotto da 'come'", "Un'esagerazione del concetto", "Una ripetizione di suoni", "Un'inversione di parole"], correct: 0 },
-      { subject: "🔬 Fisica/Scienze", text: "Qual è la particella fondamentale formata da nucleo ed elettroni?", options: ["Atomo", "Cellula", "Tessuto", "Galassia"], correct: 0 },
-      { subject: "📜 Storia", text: "In quale anno avvenne la rivoluzione o la scoperta dell'America ad opera di Colombo?", options: ["1492", "1350", "1789", "1914"], correct: 0 }
-    ],
-    6: [
-      { subject: "🇮🇹 Italiano", text: "Qual è la forma del congiuntivo imperfetto del verbo 'essere' (egli)?", options: ["Fosse", "Sia", "Sarebbe", "Fera"], correct: 0 },
-      { subject: "🧪 Chimica", text: "Qual è la formula chimica dell'anidride carbonica?", options: ["CO₂", "H₂O", "NaCl", "O₂"], correct: 0 },
-      { subject: "📜 Storia", text: "In quale periodo si è svolta la Seconda Guerra Mondiale?", options: ["1939 - 1945", "1914 - 1918", "1950 - 1960", "1800 - 1815"], correct: 0 }
-    ]
-  };
-  
-  const MULTI_GRADE_LABELS = { 
-    1: "2ª-3ª Elementare", 2: "4ª Elementare", 
-    3: "5ª Elementare", 4: "Scuola Media", 
-    5: "1ª-3ª Superiore", 6: "4ª-5ª Superiore" 
-  };
-  
-  function getLvlKeyByAge() {
-    if (state.ageTier === 'kids') {
-      return Math.min(Math.max(1, Math.floor(state.level / 2)), 2);
-    } else if (state.ageTier === 'teens') {
-      return Math.min(3 + Math.floor((state.level - 1) / 3), 4);
-    } else {
-      return Math.min(5 + Math.floor((state.level - 1) / 5), 6);
-    }
+  } else {
+    if(G.equipped[it.slot] && G.equipped[it.slot].id === id) G.equipped[it.slot] = null;
+    else G.equipped[it.slot] = it;
+    playSound('flip');
   }
-  
-  function triggerMultiGame() {
-    const lvlKey = getLvlKeyByAge();
-    const questions = MULTI_DATABASE[lvlKey];
-    const item = questions[Math.floor(Math.random() * questions.length)];
-    const rawOptions = [...item.options];
-    const correctText = rawOptions[item.correct];
-    const shuffledOptions = [...rawOptions].sort(() => Math.random() - 0.5);
-    const newCorrectIndex = shuffledOptions.indexOf(correctText);
-    
-    document.getElementById('multiTitle').textContent = `🎓 Challenge Multidisciplinare`;
-    document.getElementById('multiGradeTag').textContent = `${item.subject} • Livello: ${MULTI_GRADE_LABELS[lvlKey]}`;
-    document.getElementById('multiQuestionText').textContent = item.text;
-    const grid = document.getElementById('multiOptionsGrid');
-    grid.innerHTML = "";
-    shuffledOptions.forEach((optText, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'optBtn';
-      btn.textContent = optText;
-      btn.onclick = () => checkMultiAnswer(idx, newCorrectIndex, correctText);
-      grid.appendChild(btn);
-    });
-    document.getElementById('multiFeedback').textContent = "";
-    document.getElementById('multiCloseBtn').style.display = 'none';
-    document.getElementById('multiModal').style.display = 'flex';
+  save(); renderHeader(); renderAvatar(); renderShop();
+}
+function closeShop(){
+  el('overlay').classList.add('hidden');
+  if(shopAfterLevel){
+    shopAfterLevel = false;
+    renderHeader(); renderAvatar(); renderNode();
   }
-  
-  function checkMultiAnswer(chosen, correct, correctText) {
-    const optionsButtons = document.querySelectorAll('#multiOptionsGrid button');
-    optionsButtons.forEach(btn => btn.disabled = true);
-    const fb = document.getElementById('multiFeedback');
-    if(chosen === correct) {
-      playSound('correct'); triggerConfetti();
-      state.coins += 35; state.score += 50; updateHeader();
-      fb.textContent = "🎉 Risposta Corretta! +35 Monete & +50 Punti!";
-      fb.style.color = "#22c55e";
-    } else {
-      playSound('trash');
-      fb.textContent = `❌ Errato! La risposta corretta era: ${correctText}`;
-      fb.style.color = "#ef4444";
-    }
-    document.getElementById('multiCloseBtn').style.display = 'block';
-  }
-  function closeMultiModal() {
-    document.getElementById('multiModal').style.display = 'none';
-    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
-  }
-  
-  const PROBLEMS_DATABASE = {
-    1: [
-      { text: "Luca ha 4 scatole con 2 matite ciascuna. Quante matite ha in tutto?", options: ["8", "6", "10", "4"], correct: 0 },
-      { text: "In una classe ci sono 12 alunni divisi in 2 gruppi uguali. Quanti alunni ci sono per gruppo?", options: ["5", "6", "8", "4"], correct: 1 }
-    ],
-    2: [
-      { text: "Un fioraio crea 7 mazzi di rose. Se ogni mazzo ha 5 rose, quante rose usa in tutto?", options: ["35", "30", "40", "25"], correct: 0 },
-      { text: "Anna ha 50€. Compra un libro da 18€ e un quaderno da 5€. Quanti euro le rimangono?", options: ["25€", "32€", "27€", "20€"], correct: 2 }
-    ],
-    3: [
-      { text: "Un rettangolo ha la base di 10 cm e l'altezza di 4 cm. Qual è il suo perimetro?", options: ["40 cm", "28 cm", "14 cm", "24 cm"], correct: 1 },
-      { text: "In un frutteto ci sono 100 alberi. I 3/5 sono meli. Quanti meli ci sono?", options: ["30", "50", "60", "45"], correct: 2 }
-    ],
-    4: [
-      { text: "Un quadrato ha il lato lungo 9 cm. Qual è la sua Area?", options: ["36 cm²", "81 cm²", "18 cm²", "72 cm²"], correct: 1 },
-      { text: "Qual è il Minimo Comune Multiplo (m.c.m.) tra 6 e 8?", options: ["48", "12", "24", "18"], correct: 2 }
-    ],
-    5: [
-      { text: "Un maglione da 80€ è scontato del 25%. Quanto costa ora il maglione?", options: ["60€", "55€", "70€", "65€"], correct: 0 },
-      { text: "In un triangolo rettangolo i cateti misurano 6 cm e 8 cm. Quanto misura l'ipotenusa?", options: ["10 cm", "14 cm", "12 cm", "9 cm"], correct: 0 }
-    ],
-    6: [
-      { text: "Risolvi l'equazione di 1° grado: 3x + 5 = 20. Qual è il valore di x?", options: ["5", "4", "6", "15"], correct: 0 },
-      { text: "Qual è l'area di un cerchio avente raggio di 10 cm? (usa π = 3.14)", options: ["314 cm²", "62.8 cm²", "100 cm²", "31.4 cm²"], correct: 0 }
-    ]
-  };
-  
-  const GRADE_LABELS = { 
-    1: "🎒 Sfida: 2ª-3ª Elementare", 
-    2: "🎒 Problema: 4ª Elementare", 
-    3: "🎒 Problema: 5ª Elementare", 
-    4: "📐 Problema: Scuola Media", 
-    5: "⚡ Problema: 1ª-3ª Superiore", 
-    6: "⚡ Problema: 4ª-5ª Superiore" 
-  };
-  
-  function triggerProblemGame() {
-    document.getElementById('problemFeedback').textContent = "";
-    document.getElementById('problemCloseBtn').style.display = 'none';
+}
 
-    if (state.ageTier === 'kids') {
-      const visualTypes = ['memory', 'maze', 'color'];
-      const chosenVisual = visualTypes[Math.floor(Math.random() * visualTypes.length)];
-      if (chosenVisual === 'memory') setupMemoryVisual();
-      else if (chosenVisual === 'maze') setupMazeVisual();
-      else setupColorVisual();
-      document.getElementById('problemModal').style.display = 'flex';
-      return;
-    }
+/* ---------- tastiera per il labirinto ---------- */
+document.addEventListener('keydown', function(e){
+  if(!maze) return;
+  const k = e.key;
+  if(k === 'ArrowUp') { e.preventDefault(); mazeMove(-1,0); }
+  else if(k === 'ArrowDown') { e.preventDefault(); mazeMove(1,0); }
+  else if(k === 'ArrowLeft') { e.preventDefault(); mazeMove(0,-1); }
+  else if(k === 'ArrowRight') { e.preventDefault(); mazeMove(0,1); }
+});
 
-    const lvlKey = getLvlKeyByAge();
-    const problems = PROBLEMS_DATABASE[lvlKey];
-    const problem = problems[Math.floor(Math.random() * problems.length)];
-    document.getElementById('problemTitle').textContent = `📚 Sfida Enigmatica del Regno`;
-    document.getElementById('problemGradeTag').textContent = GRADE_LABELS[lvlKey];
-    
-    document.getElementById('problemContentArea').innerHTML = `
-      <p style="font-size: 16px; font-weight: 500; margin: 15px 0; line-height: 1.4;">${problem.text}</p>
-      <div class="miniGridChoice" id="problemOptionsGrid"></div>
-    `;
-    const grid = document.getElementById('problemOptionsGrid');
-    problem.options.forEach((optText, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'optBtn';
-      btn.textContent = optText;
-      btn.onclick = () => checkProblemAnswer(idx, problem.correct, problem.options[problem.correct]);
-      grid.appendChild(btn);
-    });
-    document.getElementById('problemModal').style.display = 'flex';
-  }
-
-  /* MINIGIOCHI VISIVI PER FASCIA PICCOLI (DINAMICI ED EVOLUTIVI) */
-
-  // MEMORY: FIGURE UGUALI, SIMBOLI CASUALI E NUMERO DI CASELLE PROGRESSIVO
-  function setupMemoryVisual() {
-    document.getElementById('problemTitle').textContent = `🃏 Gioco di Memoria! (Livello ${state.level})`;
-    
-    // Calcolo dinamico delle coppie in base al livello di gioco
-    let numPairs = 4; // Lvl 1: 4 coppie (8 carte)
-    if (state.level >= 4) numPairs = 8;      // Lvl 4+: 8 coppie (16 carte)
-    else if (state.level >= 2) numPairs = 6; // Lvl 2-3: 6 coppie (12 carte)
-
-    document.getElementById('problemGradeTag').textContent = `Trova le ${numPairs} coppie uguali! (${numPairs * 2} carte)`;
-    
-    const emojiPool = ['🐶', '🐱', '🐰', '🐮', '🦊', '🐸', '🦁', '🐯', '🐻', '🐼', '🐨', '🐵', '🦄', '🐝', '🐞', '🎨', '🚀', '⭐', '🍎', '⚽', '🍦', '🚗', '🎈', '👑'];
-    const chosen = emojiPool.sort(() => Math.random() - 0.5).slice(0, numPairs);
-    let cards = [...chosen, ...chosen].sort(() => Math.random() - 0.5);
-    
-    memoryState = { cards, flipped: [], matched: 0, totalPairs: numPairs };
-    
-    const cols = numPairs === 4 ? 4 : (numPairs === 6 ? 4 : 4);
-    let html = `<div class="memoryGrid" style="grid-template-columns: repeat(${cols}, 1fr);">`;
-    cards.forEach((c, idx) => {
-      html += `<div class="memoryCard" id="mcard-${idx}" onclick="handleMemoryClick(${idx})">❓</div>`;
-    });
-    html += `</div>`;
-    document.getElementById('problemContentArea').innerHTML = html;
-  }
-
-  function handleMemoryClick(idx) {
-    if (memoryState.flipped.length >= 2) return;
-    const cardEl = document.getElementById(`mcard-${idx}`);
-    if (cardEl.classList.contains('flipped')) return;
-
-    cardEl.textContent = memoryState.cards[idx];
-    cardEl.classList.add('flipped');
-    memoryState.flipped.push({ idx, symbol: memoryState.cards[idx] });
-
-    if (memoryState.flipped.length === 2) {
-      const [c1, c2] = memoryState.flipped;
-      if (c1.symbol === c2.symbol) {
-        memoryState.matched++;
-        memoryState.flipped = [];
-        if (memoryState.matched === memoryState.totalPairs) {
-          finishVisualGame(`🎉 Bravissimo! Hai trovato tutte le ${memoryState.totalPairs} coppie uguali! +30 Monete!`);
-        }
-      } else {
-        setTimeout(() => {
-          const card1 = document.getElementById(`mcard-${c1.idx}`);
-          const card2 = document.getElementById(`mcard-${c2.idx}`);
-          if (card1) { card1.textContent = '❓'; card1.classList.remove('flipped'); }
-          if (card2) { card2.textContent = '❓'; card2.classList.remove('flipped'); }
-          memoryState.flipped = [];
-        }, 700);
-      }
-    }
-  }
-
-  // LABIRINTO: DIVERSI LAYOUT CASUALI OGNI VOLTA
-  const MAZE_LAYOUTS = [
-    {
-      grid: [
-        [0, 0, 1, 1, 1],
-        [1, 0, 0, 0, 1],
-        [1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0],
-        [1, 1, 1, 1, 2]
-      ], start: {r:0, c:0}
-    },
-    {
-      grid: [
-        [0, 1, 1, 1, 1],
-        [0, 0, 0, 1, 1],
-        [1, 1, 0, 0, 0],
-        [1, 0, 0, 1, 0],
-        [1, 1, 1, 1, 2]
-      ], start: {r:0, c:0}
-    },
-    {
-      grid: [
-        [1, 1, 1, 1, 2],
-        [1, 0, 0, 0, 0],
-        [1, 0, 1, 1, 0],
-        [0, 0, 1, 1, 0],
-        [0, 1, 1, 1, 1]
-      ], start: {r:3, c:0}
-    }
-  ];
-
-  function setupMazeVisual() {
-    document.getElementById('problemTitle').textContent = `🌀 Labirinto dell'Eroe!`;
-    document.getElementById('problemGradeTag').textContent = `Trova la via di fuga verso la bandiera 🏁!`;
-    const layout = MAZE_LAYOUTS[Math.floor(Math.random() * MAZE_LAYOUTS.length)];
-    mazeState.grid = layout.grid;
-    mazeState.pos = { ...layout.start };
-    renderMazeUI();
-  }
-
-  function renderMazeUI() {
-    const gridData = mazeState.grid;
-    let html = `<div class="mazeGrid">`;
-    for(let r=0; r<5; r++) {
-      for(let c=0; c<5; c++) {
-        let cellContent = "";
-        if (mazeState.pos.r === r && mazeState.pos.c === c) cellContent = state.gender === 'cavaliere' ? '⚔️' : '👸';
-        else if (gridData[r][c] === 2) cellContent = '🏁';
-        
-        let typeClass = gridData[r][c] === 1 ? 'mazeWall' : 'mazePath';
-        html += `<div class="mazeCell ${typeClass}">${cellContent}</div>`;
-      }
-    }
-    html += `</div>`;
-    html += `
-      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:10px;">
-        <button onclick="moveMaze(-1,0)">⬆️</button>
-        <div style="display:flex; gap:16px;">
-          <button onclick="moveMaze(0,-1)">⬅️</button>
-          <button onclick="moveMaze(0,1)">➡️</button>
-        </div>
-        <button onclick="moveMaze(1,0)">⬇️</button>
-      </div>
-    `;
-    document.getElementById('problemContentArea').innerHTML = html;
-  }
-
-  function moveMaze(dr, dc) {
-    const gridData = mazeState.grid;
-    let nr = mazeState.pos.r + dr;
-    let nc = mazeState.pos.c + dc;
-    if (nr >= 0 && nr < 5 && nc >= 0 && nc < 5 && gridData[nr][nc] !== 1) {
-      mazeState.pos = { r: nr, c: nc };
-      renderMazeUI();
-      if (gridData[nr][nc] === 2) {
-        finishVisualGame("🎉 Fantastico! Sei uscito dal labirinto! +30 Monete!");
-      }
-    }
-  }
-
-  // COLORAZIONE VISIVA
-  function setupColorVisual() {
-    document.getElementById('problemTitle').textContent = `🎨 Colora con i Numeri!`;
-    document.getElementById('problemGradeTag').textContent = `Scegli il colore in alto e tocca la figura corrispondente!`;
-    colorState = { activeColor: 1, filled: { 1: false, 2: false, 3: false, 4: false } };
-    
-    let html = `
-      <div class="colorPalette">
-        <button class="colorBtn selected" style="background:#fde047;" onclick="selectColor(1, this)">1</button>
-        <button class="colorBtn" style="background:#f472b6;" onclick="selectColor(2, this)">2</button>
-        <button class="colorBtn" style="background:#38bdf8;" onclick="selectColor(3, this)">3</button>
-        <button class="colorBtn" style="background:#4ade80;" onclick="selectColor(4, this)">4</button>
-      </div>
-      <svg viewBox="0 0 200 160" style="width:220px; height:auto; margin:0 auto; display:block;">
-        <circle id="csec-1" class="colorRegion" cx="60" cy="80" r="35" fill="#334155" onclick="colorSector(1)"/>
-        <text x="60" y="85" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">1</text>
-        
-        <circle id="csec-2" class="colorRegion" cx="140" cy="80" r="35" fill="#334155" onclick="colorSector(2)"/>
-        <text x="140" y="85" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">2</text>
-        
-        <rect id="csec-3" class="colorRegion" x="80" y="20" width="40" height="40" rx="8" fill="#334155" onclick="colorSector(3)"/>
-        <text x="100" y="45" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">3</text>
-        
-        <rect id="csec-4" class="colorRegion" x="80" y="100" width="40" height="40" rx="8" fill="#334155" onclick="colorSector(4)"/>
-        <text x="100" y="125" fill="#fff" font-weight="bold" text-anchor="middle" pointer-events="none">4</text>
-      </svg>
-    `;
-    document.getElementById('problemContentArea').innerHTML = html;
-  }
-
-  function selectColor(cNum, btn) {
-    colorState.activeColor = cNum;
-    document.querySelectorAll('.colorBtn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-  }
-
-  function colorSector(sNum) {
-    const palette = { 1: "#fde047", 2: "#f472b6", 3: "#38bdf8", 4: "#4ade80" };
-    if (colorState.activeColor === sNum) {
-      document.getElementById(`csec-${sNum}`).setAttribute('fill', palette[sNum]);
-      colorState.filled[sNum] = true;
-      if (Object.values(colorState.filled).every(v => v === true)) {
-        finishVisualGame("🎨 Che capolavoro! Disegno colorato alla perfezione! +30 Monete!");
-      }
-    }
-  }
-
-  function finishVisualGame(msg) {
-    playSound('correct'); triggerConfetti();
-    state.coins += 30; state.score += 40; updateHeader();
-    const fb = document.getElementById('problemFeedback');
-    fb.textContent = msg; fb.style.color = "#22c55e";
-    document.getElementById('problemCloseBtn').style.display = 'block';
-  }
-
-  function checkProblemAnswer(chosen, correct, correctText) {
-    const optionsButtons = document.querySelectorAll('#problemOptionsGrid button');
-    optionsButtons.forEach(btn => btn.disabled = true);
-    const fb = document.getElementById('problemFeedback');
-    if(chosen === correct) {
-      playSound('correct'); triggerConfetti();
-      state.coins += 30; state.score += 40; updateHeader();
-      fb.textContent = "🎉 Eccellente! Hai risolto il problema! +30 Monete & +40 Punti!";
-      fb.style.color = "#22c55e";
-    } else {
-      playSound('trash');
-      fb.textContent = `❌ Peccato! La risposta corretta era: ${correctText}`;
-      fb.style.color = "#ef4444";
-    }
-    document.getElementById('problemCloseBtn').style.display = 'block';
-  }
-  function closeProblemModal() {
-    document.getElementById('problemModal').style.display = 'none';
-    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
-  }
-  function triggerSkillGame() {
-    const gameTypeIndex = state.skillGameIndex % 4;
-    state.skillGameIndex++;
-    const modal = document.getElementById('skillModal');
-    document.getElementById('skillFeedback').textContent = "";
-    document.getElementById('skillCloseBtn').style.display = 'none';
-    switch(gameTypeIndex) {
-      case 0: setupFindDiffGame(); break;
-      case 1: setupTrisGame(); break;
-      case 2: setupRebusGame(); break;
-      case 3: setupIntrusoGame(); break;
-    }
-    modal.style.display = 'flex';
-  }
-  function setupFindDiffGame() {
-    document.getElementById('skillTitle').textContent = `🎯 Trova la Differenza! (Livello ${state.level})`;
-    document.getElementById('skillDesc').textContent = "Osserva con attenzione le due immagini e tocca la differenza!";
-    const themes = [
-      {
-        title: "Il Banchetto Reale",
-        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#a7f3d0"/><circle cx="80" cy="20" r="10" fill="#fde047"/><text x="20" y="60" font-size="20">🧺</text><text x="50" y="60" font-size="16">🍎</text><text x="65" y="60" font-size="16">🎈</text></svg>`,
-        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#a7f3d0"/><circle cx="80" cy="20" r="10" fill="#fde047"/><text x="20" y="60" font-size="20">🧺</text><text x="50" y="60" font-size="16">🍎</text><text x="65" y="60" font-size="16" onclick="skillWin(30, 'Hai trovato la differenza nel banchetto!')" style="cursor:pointer;">🐥</text></svg>`
-      },
-      {
-        title: "Il Bosco Incantato",
-        cardA: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14">🍄</text></svg>`,
-        cardB: `<svg viewBox="0 0 100 80"><rect width="100" height="80" fill="#bfdbfe"/><text x="10" y="50" font-size="22">🌲</text><text x="40" y="50" font-size="22">🌲</text><text x="70" y="50" font-size="22">🐺</text><text x="45" y="70" font-size="14" onclick="skillWin(30, 'Hai trovato il fiore tra gli alberi!')" style="cursor:pointer;">🌸</text></svg>`
-      }
-    ];
-    const currentTheme = themes[(state.level - 1) % themes.length];
-    document.getElementById('skillContent').innerHTML = `
-      <div class="diffScene">
-        <div style="font-weight:bold; margin-bottom:5px;">${currentTheme.title}</div>
-        <div class="diffBoxContainer">
-          <div class="diffCard" onclick="skillFail('Nessuna differenza qui!')">${currentTheme.cardA}</div>
-          <div class="diffCard">${currentTheme.cardB}</div>
-        </div>
-      </div>
-    `;
-  }
-  function setupTrisGame() {
-    document.getElementById('skillTitle').textContent = `❌ TRIS VS AI ⭕ (Livello ${state.level})`;
-    document.getElementById('skillDesc').textContent = `Affronta l'IA del Regno!`;
-    trisState = { board: Array(9).fill(''), active: true };
-    renderTrisGrid();
-  }
-  function renderTrisGrid() {
-    let gridHTML = `<div class="trisGrid">`;
-    for(let i=0; i<9; i++) {
-      gridHTML += `<div class="trisCell" onclick="makeTrisMove(${i})">${trisState.board[i]}</div>`;
-    }
-    gridHTML += `</div>`;
-    document.getElementById('skillContent').innerHTML = gridHTML;
-  }
-  function makeTrisMove(idx) {
-    if(!trisState.active || trisState.board[idx] !== '') return;
-    trisState.board[idx] = '❌';
-    renderTrisGrid();
-    if(checkTrisWin('❌')) {
-      skillWin(40, "🎉 Impresa! Hai battuto l'IA a Tris! +40 Monete!");
-      trisState.active = false;
-      return;
-    }
-    if(trisState.board.every(cell => cell !== '')) {
-      skillWin(20, "🤝 Pareggio tattico! +20 Monete!");
-      trisState.active = false;
-      return;
-    }
-    setTimeout(() => {
-      let aiMove = getAiMove();
-      if(aiMove !== -1) {
-        trisState.board[aiMove] = '⭕';
-        renderTrisGrid();
-        if(checkTrisWin('⭕')) {
-          skillFail("🤖 L'IA ti ha battuto! Studia una nuova strategia!");
-          trisState.active = false;
-        } else if(trisState.board.every(cell => cell !== '')) {
-          skillWin(20, "🤝 Pareggio tattico! +20 Monete!");
-          trisState.active = false;
-        }
-      }
-    }, 250);
-  }
-  function getAiMove() {
-    const emptyIndices = trisState.board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
-    if(emptyIndices.length === 0) return -1;
-    for(let idx of emptyIndices) {
-      trisState.board[idx] = '⭕';
-      if(checkTrisWin('⭕')) { trisState.board[idx] = ''; return idx; }
-      trisState.board[idx] = '';
-    }
-    for(let idx of emptyIndices) {
-      trisState.board[idx] = '❌';
-      if(checkTrisWin('❌')) { trisState.board[idx] = ''; return idx; }
-      trisState.board[idx] = '';
-    }
-    if(trisState.board[4] === '') return 4;
-    return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
-  }
-  function checkTrisWin(sym) {
-    const wins = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
-    return wins.some(w => w.every(idx => trisState.board[idx] === sym));
-  }
-  function setupRebusGame() {
-    document.getElementById('skillTitle').textContent = `🧩 Risolvi il Rebus!`;
-    document.getElementById('skillDesc').textContent = "Decifra l'associazione visiva ed enigmistica!";
-    const rebuses = [
-      { prompt: "👑 (RE) + 🚌 (BUS)", options: ["REBUS", "ROBOT", "REGALO", "AUTOBUS"], correct: 0 },
-      { prompt: "🔤 C + 🐻 (ORSO)", options: ["CARTA", "CORSO", "ORSO", "CASO"], correct: 1 },
-      { prompt: "🔤 S + 🧙‍♂️ (MAGO)", options: ["STREGA", "DRAGO", "SMAGO", "MAGO"], correct: 2 }
-    ];
-    const currentRebus = rebuses[(state.level - 1) % rebuses.length];
-    let html = `<div style="font-size:32px; margin:20px 0; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">${currentRebus.prompt}</div>`;
-    html += `<div class="miniGridChoice">`;
-    currentRebus.options.forEach((opt, idx) => {
-      html += `<button class="optBtn" onclick="checkRebusChoice(${idx}, ${currentRebus.correct})">${opt}</button>`;
-    });
-    html += `</div>`;
-    document.getElementById('skillContent').innerHTML = html;
-  }
-  function checkRebusChoice(chosen, correct) {
-    if(chosen === correct) { skillWin(35, "💡 Rebus Risolto con successo! +35 Monete!"); }
-    else { skillFail("Soluzione errata! Allena la tua mente!"); }
-  }
-  function setupIntrusoGame() {
-    document.getElementById('skillTitle').textContent = `🕵️ Trova l'Intruso!`;
-    document.getElementById('skillDesc').textContent = "Identifica l'elemento che non rispetta la regola logica!";
-    let intruderPool = [
-      { title: "Quale tra questi numeri NON è PARI?", items: ["4", "8", "12", "9"], correct: 3 },
-      { title: "Quale tra questi valori NON è un numero PRIMO?", items: ["7", "11", "15", "13"], correct: 2 }
-    ];
-    const current = intruderPool[Math.floor(Math.random() * intruderPool.length)];
-    let html = `<div style="font-size:16px; font-weight:bold; margin-bottom:12px;">${current.title}</div>`;
-    html += `<div class="miniGridChoice">`;
-    current.items.forEach((item, idx) => {
-      html += `<div class="intrusoCard" onclick="checkIntruso(${idx}, ${current.correct})">${item}</div>`;
-    });
-    html += `</div>`;
-    document.getElementById('skillContent').innerHTML = html;
-  }
-  function checkIntruso(chosen, correct) {
-    if(chosen === correct) { skillWin(35, "🔍 Eccellente! Hai smascherato l'intruso! +35 Monete!"); }
-    else { skillFail("Risposta errata! Quello non era l'intruso."); }
-  }
-  function skillWin(reward, msg) {
-    playSound('correct'); triggerConfetti();
-    state.coins += reward; updateHeader();
-    const fb = document.getElementById('skillFeedback');
-    fb.textContent = msg; fb.style.color = "#22c55e";
-    document.getElementById('skillCloseBtn').style.display = 'block';
-  }
-  function skillFail(msg) {
-    playSound('trash');
-    const fb = document.getElementById('skillFeedback');
-    fb.textContent = msg; fb.style.color = "#ef4444";
-    document.getElementById('skillCloseBtn').style.display = 'block';
-  }
-  function closeSkillModal() {
-    document.getElementById('skillModal').style.display = 'none';
-    if(state.step > 20) { showLevelUpModal(); } else { renderRound(); }
-  }
-  function showLevelUpModal() {
-    document.getElementById('levelUpText').innerHTML = `<b>${state.heroName}</b> ha completato con successo il <b>Livello ${state.level}</b>!`;
-    document.getElementById('levelUpModal').style.display = 'flex';
-  }
-  function openShopModal() {
-    document.getElementById('levelUpModal').style.display = 'none';
-    renderShop();
-    document.getElementById('shopModal').style.display = 'flex';
-  }
-  function startNextLevelFromShop() {
-    document.getElementById('shopModal').style.display = 'none';
-    state.step = 1;
-    state.level++;
-    updateHeader();
-    renderKingdomMap();
-    renderRound();
-  }
-  let leaderboard = JSON.parse(localStorage.getItem('tabelline_leaderboard') || '[]');
-  function showGameOver() {
-    leaderboard.push({ name: state.heroName, score: state.score, level: state.level });
-    leaderboard.sort((a,b) => b.score - a.score);
-    leaderboard = leaderboard.slice(0, 5);
-    localStorage.setItem('tabelline_leaderboard', JSON.stringify(leaderboard));
-    const tbody = document.getElementById('leaderboardBody');
-    tbody.innerHTML = leaderboard.map((item, idx) => `
-      <tr>
-        <td><b>#${idx+1}</b></td>
-        <td>${item.name}</td>
-        <td>Lvl ${item.level}</td>
-        <td><b>${item.score}</b> pts</td>
-      </tr>
-    `).join('');
-    document.getElementById('gameOverModal').style.display = 'flex';
-  }
-  function resetFullGame(changeHero = false) {
-    state.lives = 5; state.level = 1; state.step = 1; state.score = 0; state.coins = 0; state.correctStreak = 0;
-    document.getElementById('gameOverModal').style.display = 'none';
-    if (changeHero) {
-      document.getElementById('charNameInput').value = state.heroName;
-      document.getElementById('charAgeInput').value = state.heroAge;
-      document.getElementById('initModal').style.display = 'flex';
-    } else {
-      updateHeader(); renderKingdomMap(); renderRound();
-    }
-  }
+/* ---------- avvio ---------- */
+load();
+musicLoad();
+renderHomePreviews();
+updFascia();
 </script>
 </body>
 </html>
